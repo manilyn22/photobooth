@@ -74,14 +74,24 @@ input{font:inherit}
 }
 #start::after{
   content:"";position:absolute;inset:0;z-index:1;
-  background:linear-gradient(180deg,rgba(6,18,26,.26) 0%,rgba(6,18,26,.08) 30%,rgba(6,18,26,.5) 60%,rgba(6,18,26,.88) 82%,rgba(6,18,26,.94) 100%);
+  background:linear-gradient(180deg,rgba(6,18,26,.3) 0%,rgba(6,18,26,.1) 32%,rgba(6,18,26,.28) 62%,rgba(6,18,26,.42) 100%);
 }
 .mid{
   position:relative;z-index:2;display:flex;flex-direction:column;justify-content:flex-end;
-  min-height:100svh;padding:max(env(safe-area-inset-top),20px) var(--pad) max(env(safe-area-inset-bottom),20px);
-  color:#fff;
+  min-height:100svh;padding:0;color:#fff;
 }
-.mid .mark{font-size:clamp(40px,12vw,58px);color:#fff;margin-bottom:auto;text-shadow:0 2px 16px rgba(0,0,0,.35)}
+.mid .mark{
+  font-size:clamp(40px,12vw,58px);color:#fff;margin-bottom:auto;
+  padding:max(env(safe-area-inset-top),20px) var(--pad) 0;
+  text-shadow:0 2px 16px rgba(0,0,0,.4);
+}
+.panel{
+  padding:56px var(--pad) max(env(safe-area-inset-bottom),18px);
+  background:linear-gradient(180deg,
+    rgba(6,18,26,0) 0%, rgba(6,18,26,.62) 9%, rgba(6,18,26,.86) 22%,
+    rgba(6,18,26,.93) 45%, rgba(6,18,26,.96) 100%);
+  backdrop-filter:blur(3px);-webkit-backdrop-filter:blur(3px);
+}
 .mid .mark i{color:#e9bb8c}
 .hero h1{
   font-size:clamp(30px,8.6vw,44px);font-weight:700;letter-spacing:-.035em;
@@ -90,15 +100,20 @@ input{font:inherit}
 }
 .hero p{margin:0;color:rgba(255,255,255,.88);font-size:16.5px;text-shadow:0 1px 10px rgba(0,0,0,.5)}
 
-.rules{list-style:none;margin:20px 0 14px;padding:0;border-top:1px solid rgba(255,255,255,.28)}
+.rules{list-style:none;margin:20px 0 14px;padding:0;border-top:1px solid rgba(255,255,255,.34)}
 .rules li{
   display:flex;align-items:baseline;justify-content:space-between;gap:14px;
-  padding:11px 0;border-bottom:1px solid rgba(255,255,255,.28);
+  padding:11px 0;border-bottom:1px solid rgba(255,255,255,.34);
 }
 .rules b{font-weight:700;font-size:15.5px;white-space:nowrap;color:#fff;text-shadow:0 1px 8px rgba(0,0,0,.5)}
 .rules span{color:rgba(255,255,255,.88);font-size:14.5px;text-align:right;flex:none;text-shadow:0 1px 8px rgba(0,0,0,.5)}
 .rules em{font-style:normal;color:#8fd9bd;font-weight:800}
-.note{font-size:13.5px;color:rgba(255,255,255,.78);margin:0 0 20px;line-height:1.4;text-shadow:0 1px 8px rgba(0,0,0,.5)}
+.note{
+  display:block;font-size:15px;line-height:1.45;color:#ffffff;font-weight:600;
+  margin:2px 0 20px;padding:13px 15px;
+  background:rgba(255,255,255,.16);border-left:4px solid #8fd9bd;
+}
+.note b{color:#8fd9bd;font-weight:800}
 
 #start .field label{color:rgba(255,255,255,.8)}
 #start .field input{
@@ -218,6 +233,7 @@ input{font:inherit}
   <div class="mid">
     <div class="mark">healf<i>.</i></div>
 
+    <div class="panel">
     <div class="hero">
       <h1 id="hEvent">Remote Retreat</h1>
       <p id="hWhere">Boracay</p>
@@ -227,7 +243,7 @@ input{font:inherit}
       <li><b>Save to your phone</b><span><em>Unlimited</em></span></li>
       <li><b>Post to the shared gallery</b><span id="capLine">10 photos each</span></li>
     </ul>
-    <p class="note" id="capNote">Only the shared gallery is capped. Keep as many as you like on your own phone.</p>
+    <p class="note" id="capNote">Only the shared gallery is capped. <b>Keep as many as you like on your own phone.</b></p>
 
     <div class="foot">
       <div class="field">
@@ -237,6 +253,7 @@ input{font:inherit}
       <button class="btn" id="goBooth" disabled>Open the camera</button>
       <button class="btn ghost" id="goGallery">See everyone's photos</button>
       <p class="tiny">Works in your phone's browser. No app, no sign-in.</p>
+    </div>
     </div>
   </div>
 </section>
