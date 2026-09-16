@@ -280,15 +280,13 @@ const hasCloud = function(){ return !!(CONFIG.SUPABASE_URL && CONFIG.SUPABASE_AN
 
 /* ---------------- frames ---------------- */
 const FRAMES = {
-  white:  { label:"White",  bg:"#ffffff", fg:"#000000", sub:"#575757", edge:"#d4d4d4", hair:true },
-  black:  { label:"Black",  bg:"#000000", fg:"#ffffff", sub:"#9a9a9a", edge:"#000000", hair:true },
-  tropic: { label:"Tropic", bg:"#ffffff", fg:"#123024", sub:"#6c7a72", edge:"#b9d3c6",
-            art:"tropic", key:"#cb8f51" },
-  coast:  { label:"Coast",  bg:"#ffffff", fg:"#1f2a44", sub:"#7b869c", edge:"#bcccea",
-            art:"coast",  key:"#5377bb" }
+  boracay: { label:"Boracay", file:"frame-boracay.png",
+             cw:1474, ch:2048, wx:150, wy:191, ww:1174, wh:1607, tagBottom:1600, edge:"#8ec9e8" },
+  white:   { label:"White", bg:"#ffffff", fg:"#000000", sub:"#575757", edge:"#d4d4d4" },
+  black:   { label:"Black", bg:"#000000", fg:"#ffffff", sub:"#9a9a9a", edge:"#000000" }
 };
-const FRAME_KEYS = ["white","black","tropic","coast"];
-let frameKey = "white";
+const FRAME_KEYS = ["boracay","white","black"];
+let frameKey = "boracay";
 
 (function buildFrameChips(){
   const row = $("frames");
@@ -308,6 +306,7 @@ let frameKey = "white";
       c.setAttribute("aria-pressed", String(c === b));
     });
     paintFrameHint();
+    if(FRAMES[frameKey].file) loadFrameImage(FRAMES[frameKey].file).catch(function(){});
   });
 })();
 
@@ -409,193 +408,22 @@ function shutterSound(){
   setTimeout(function(){ beep(700, .09, .2); }, 60);
 }
 
-/* ---------------- frame artwork (drawn as SVG, then painted on) ---------------- */
-function R(n){ return Math.round(n*10)/10; }
-
-function gPlace(x, y, rot, inner, sc){
-  return '<g transform="translate(' + R(x) + ',' + R(y) + ') rotate(' + R(rot) + ')' +
-         (sc && sc !== 1 ? ' scale(' + sc + ')' : '') + '">' + inner + '</g>';
-}
-function sLeaf(len, w, fill, op){
-  return '<path d="M0 0 C' + R(len*.22) + ' ' + R(-w) + ' ' + R(len*.72) + ' ' + R(-w*.95) +
-         ' ' + R(len) + ' 0 C' + R(len*.72) + ' ' + R(w*.95) + ' ' + R(len*.22) + ' ' + R(w) +
-         ' 0 0 Z" fill="' + fill + '" opacity="' + op + '"/>' +
-         '<path d="M0 0 Q' + R(len*.5) + ' ' + R(-w*.1) + ' ' + R(len) + ' 0" fill="none" ' +
-         'stroke="#ffffff" stroke-opacity=".3" stroke-width="' + R(Math.max(1, len*.014)) + '"/>';
-}
-function sFrond(len, fill, op){
-  let out = '<path d="M0 0 Q' + R(len*.5) + ' ' + R(-len*.07) + ' ' + R(len) + ' ' + R(-len*.16) +
-            '" fill="none" stroke="' + fill + '" stroke-opacity="' + op + '" stroke-width="' +
-            R(len*.02) + '" stroke-linecap="round"/>';
-  const n = 9;
-  for(let i = 1; i <= n; i++){
-    const t = i/n;
-    const qx = 2*(1-t)*t*(len*.5) + t*t*len;
-    const qy = 2*(1-t)*t*(-len*.07) + t*t*(-len*.16);
-    const L = len*(0.48*Math.sin(Math.PI*Math.min(t*1.04, 1)) + 0.07);
-    const w = L*0.125;
-    out += gPlace(qx, qy, -72 + 44*t, sLeaf(L, w, fill, op));
-    out += gPlace(qx, qy,  66 - 38*t, sLeaf(L, w, fill, op*0.9));
-  }
-  return out;
-}
-function sBloom(r, petal, mid, op){
-  let out = '';
-  for(let k = 0; k < 5; k++){
-    out += '<ellipse cx="' + R(r*.54) + '" cy="0" rx="' + R(r*.54) + '" ry="' + R(r*.36) +
-           '" fill="' + petal + '" opacity="' + op + '" transform="rotate(' + (k*72) + ')"/>';
-  }
-  out += '<circle r="' + R(r*.2) + '" fill="' + mid + '" opacity="' + op + '"/>';
-  return out;
-}
-function sStar(r, fill, op){
-  const rad = function(d){ return d*Math.PI/180; };
-  const P5 = [];
-  for(let k = 0; k < 5; k++){
-    const base = -90 + k*72;
-    P5.push({
-      ox: Math.cos(rad(base))*r,        oy: Math.sin(rad(base))*r,
-      ix: Math.cos(rad(base+36))*r*.44, iy: Math.sin(rad(base+36))*r*.44,
-      ax: Math.cos(rad(base+15))*r*.84, ay: Math.sin(rad(base+15))*r*.84,
-      bx: Math.cos(rad(base+57))*r*.84, by: Math.sin(rad(base+57))*r*.84
-    });
-  }
-  let d = 'M' + R(P5[0].ox) + ' ' + R(P5[0].oy);
-  for(let k = 0; k < 5; k++){
-    const c = P5[k], n2 = P5[(k+1)%5];
-    d += ' Q' + R(c.ax) + ' ' + R(c.ay) + ' ' + R(c.ix) + ' ' + R(c.iy);
-    d += ' Q' + R(c.bx) + ' ' + R(c.by) + ' ' + R(n2.ox) + ' ' + R(n2.oy);
-  }
-  d += ' Z';
-  let dots = '';
-  for(let k = 0; k < 5; k++){
-    const a = rad(-90 + k*72);
-    for(let j = 1; j <= 3; j++){
-      const rr = r*(0.28 + j*0.19);
-      dots += '<circle cx="' + R(Math.cos(a)*rr) + '" cy="' + R(Math.sin(a)*rr) +
-              '" r="' + R(r*0.045) + '" fill="#ffffff" opacity="' + (op*0.5) + '"/>';
-    }
-  }
-  return '<path d="' + d + '" fill="' + fill + '" opacity="' + op + '"/>' + dots;
-}
-function sCoral(sc, fill, op){
-  const lanes = [[], [], [], [], []];
-  function branch(x, y, ang, len, depth){
-    const cx = x + Math.cos(ang - .3)*len*.6, cy = y + Math.sin(ang - .3)*len*.6;
-    const ex = x + Math.cos(ang)*len,          ey = y + Math.sin(ang)*len;
-    lanes[4-depth].push('M' + R(x) + ' ' + R(y) + ' Q' + R(cx) + ' ' + R(cy) + ' ' + R(ex) + ' ' + R(ey));
-    if(depth > 0){
-      branch(ex, ey, ang - .62, len*.64, depth-1);
-      branch(ex, ey, ang + .58, len*.6,  depth-1);
-      if(depth >= 3) branch(ex, ey, ang + .02, len*.56, depth-1);
-    } else {
-      lanes[4].push('M' + R(ex) + ' ' + R(ey) + ' L' + R(ex) + ' ' + R(ey));
-    }
-  }
-  branch(0, 0, -Math.PI/2, 26*sc, 4);
-  const widths = [9.5, 6.8, 5, 3.6, 2.8];
-  let out = '';
-  lanes.forEach(function(lane, i){
-    if(!lane.length) return;
-    out += '<path d="' + lane.join(' ') + '" fill="none" stroke="' + fill + '" stroke-opacity="' + op +
-           '" stroke-width="' + R(widths[i]*sc) + '" stroke-linecap="round"/>';
-  });
-  return out;
-}
-
-/* one corner bundle of foliage, growing out of the origin */
-function tropicCluster(sc){
-  const D = "#14503c", M = "#2e7a61", L = "#58a085";
-  let o = '';
-  o += gPlace(-36,  52,  12, sFrond(262, D, .95));
-  o += gPlace(-18, 162,  54, sFrond(214, M, .92));
-  o += gPlace( 58, -30,  76, sFrond(232, D, .86));
-  o += gPlace(132, 104,  20, sFrond(152, L, .9));
-  o += gPlace( 96,  18,  -4, sLeaf(168, 64, M, .9));
-  o += gPlace( 18, 214,  58, sLeaf(146, 56, L, .88));
-  o += gPlace(184,  46,  30, sLeaf(112, 40, D, .85));
-  o += gPlace(122, 162,   0, sBloom(40, "#eec39d", "#cb8f51", 1));
-  o += gPlace( 34, 196,   0, sBloom(27, "#f6ded0", "#cb8f51", 1));
-  o += gPlace(198, 122,   0, sBloom(20, "#eec39d", "#a8703a", 1));
-  return sc === 1 ? o : '<g transform="scale(' + sc + ')">' + o + '</g>';
-}
-
-function ornamentSVG(kind, W, H){
-  let body = '', defs = '';
-  if(kind === "tropic"){
-    body += gPlace(0, 0, 0, tropicCluster(1));
-    body += gPlace(W, H, 180, tropicCluster(1));
-    body += gPlace(W, 0, 90, tropicCluster(0.62));
-    body += gPlace(0, H, 270, tropicCluster(0.55));
-  } else {
-    const wash = function(id, c, o1, x1, y1, x2, y2){
-      return '<linearGradient id="' + id + '" x1="' + x1 + '" y1="' + y1 + '" x2="' + x2 + '" y2="' + y2 + '">' +
-             '<stop offset="0" stop-color="' + c + '" stop-opacity="' + o1 + '"/>' +
-             '<stop offset=".65" stop-color="' + c + '" stop-opacity="' + (o1*0.35) + '"/>' +
-             '<stop offset="1" stop-color="' + c + '" stop-opacity="0"/></linearGradient>';
-    };
-    defs += wash("wt", "#4a6fc0", .7, 0, 0, 0, 1);
-    defs += wash("wt2","#3f61a4", .34, 0, 0, 0, 1);
-    defs += wash("wb", "#4a6fc0", .56, 0, 1, 0, 0);
-
-    body += '<path d="M0 0 H' + W + ' V150 C' + R(W*.85) + ' 232 ' + R(W*.7) + ' 104 ' +
-            R(W*.55) + ' 178 C' + R(W*.41) + ' 244 ' + R(W*.27) + ' 124 ' + R(W*.14) +
-            ' 190 C' + R(W*.08) + ' 218 ' + R(W*.04) + ' 168 0 200 Z" fill="url(#wt)"/>';
-    body += '<path d="M0 0 H' + W + ' V96 C' + R(W*.78) + ' 150 ' + R(W*.6) + ' 62 ' +
-            R(W*.4) + ' 124 C' + R(W*.24) + ' 172 ' + R(W*.11) + ' 88 0 132 Z" fill="url(#wt2)"/>';
-    body += '<path d="M0 ' + H + ' H' + W + ' V' + R(H-168) + ' C' + R(W*.79) + ' ' + R(H-88) +
-            ' ' + R(W*.61) + ' ' + R(H-206) + ' ' + R(W*.44) + ' ' + R(H-134) +
-            ' C' + R(W*.28) + ' ' + R(H-74) + ' ' + R(W*.14) + ' ' + R(H-196) + ' 0 ' + R(H-140) + ' Z" fill="url(#wb)"/>';
-    body += gPlace(104, H-126, -18, sStar(62, "#5e85c6", .95));
-    body += gPlace(208,  H-64,  14, sStar(32, "#93aedb", .92));
-    body += gPlace(W-168, H-92,  6, sCoral(1.55, "#cb8f51", .88));
-    body += gPlace(W-76,  H-112, -9, sCoral(1.1,  "#6f92cd", .9));
-    body += gPlace(W-124, 132,   22, sStar(42, "#7b9ad0", .92));
-    body += gPlace(96,    120,   -8, sCoral(1.0,  "#7b9ad0", .78));
-    body += gPlace(W-64,  178,   -14, sCoral(0.8, "#93aedb", .62));
-  }
-  return '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ' + W + ' ' + H + '">' +
-         (defs ? '<defs>' + defs + '</defs>' : '') + body + '</svg>';
-}
-
-var artCache = {};
-function loadArt(kind, W, H, px){
-  const id = kind + ":" + px;
-  if(artCache[id]) return artCache[id];
-  const svg = ornamentSVG(kind, W, H).replace('<svg ', '<svg width="' + px + '" height="' + Math.round(px*H/W) + '" ');
-  artCache[id] = new Promise(function(res, rej){
+/* ---------------- frame images ---------------- */
+var imgCache = {};
+function loadFrameImage(src){
+  if(imgCache[src]) return imgCache[src];
+  imgCache[src] = new Promise(function(res, rej){
     const im = new Image();
     im.onload = function(){ res(im); };
-    im.onerror = rej;
-    im.src = "data:image/svg+xml;charset=utf-8," + encodeURIComponent(svg);
+    im.onerror = function(){ rej(new Error("could not load " + src)); };
+    im.src = src;
   });
-  return artCache[id];
+  return imgCache[src];
 }
-
-/* little preview of each frame for the chips */
 function swatchCSS(key){
   const f = FRAMES[key];
-  if(!f.art) return 'linear-gradient(' + f.bg + ',' + f.bg + ')';
-  let inner;
-  if(key === "tropic"){
-    inner = '<rect width="140" height="44" fill="#fff"/>' +
-            gPlace(4, 6, 12, sFrond(58, "#1f4a3c", .95)) +
-            gPlace(2, 34, -28, sFrond(48, "#32755f", .9)) +
-            gPlace(136, 40, 190, sFrond(56, "#1f4a3c", .95)) +
-            gPlace(126, 8, 150, sFrond(44, "#5d9b83", .9)) +
-            gPlace(54, 22, 0, sBloom(13, "#e6b183", "#cb8f51", 1));
-  } else {
-    inner = '<rect width="140" height="44" fill="#fff"/>' +
-            '<defs><linearGradient id="sw" x1="0" y1="0" x2="0" y2="1">' +
-            '<stop offset="0" stop-color="#5377bb" stop-opacity=".55"/>' +
-            '<stop offset="1" stop-color="#5377bb" stop-opacity="0"/></linearGradient></defs>' +
-            '<path d="M0 0 H140 V16 C104 30 76 8 44 22 C28 29 14 18 0 26 Z" fill="url(#sw)"/>' +
-            gPlace(26, 33, -14, sStar(11, "#6f92cd", .95)) +
-            gPlace(112, 32, 0, sCoral(.42, "#cb8f51", .9));
-  }
-  const svg = '<svg xmlns="http://www.w3.org/2000/svg" width="140" height="44" viewBox="0 0 140 44">' + inner + '</svg>';
-  return "center/cover no-repeat url('data:image/svg+xml;charset=utf-8," +
-         encodeURIComponent(svg).replace(/'/g, "%27") + "')";
+  return f.file ? "top/cover no-repeat url('" + f.file + "')"
+                : "linear-gradient(" + f.bg + "," + f.bg + ")";
 }
 
 /* ---------------- capture ---------------- */
@@ -615,123 +443,117 @@ $("snap").addEventListener("click", async function(){
 
 async function buildPhoto(){
   try{ await document.fonts.ready; }catch(e){}
-  const v = $("cam");
   const F = FRAMES[frameKey];
-  const S = 3;
-  const art = !!F.art;
+  if(F.file) return buildFromImage(F);
+  return buildPlain(F);
+}
 
-  /* base layout in 1x units, then everything multiplied by S */
-  const bW = 1080;
-  const side = art ? 112 : 48;
-  const top  = art ? 176 : 48;
-  const bot  = art ? 234 : 213;
-  const pw   = bW - side*2;
-  const ph   = Math.round(pw*1.25);          // 4:5 window
-  const hair = art ? 0 : 9;
-  const bH   = top + ph + hair + bot;
+/* draws the photo into the window of a designed frame image */
+async function buildFromImage(F){
+  let art;
+  try{
+    art = await loadFrameImage(F.file);
+  }catch(e){
+    toast("The frame image is missing. Using the white frame.");
+    frameKey = "white";
+    Array.prototype.forEach.call($("frames").children, function(c){
+      c.setAttribute("aria-pressed", String(c.dataset.f === "white"));
+    });
+    paintFrameHint();
+    return buildPlain(FRAMES.white);
+  }
 
-  const W = bW*S, H = bH*S;
+  const v = $("cam");
+  const W = F.cw, H = F.ch;
+  const cv = document.createElement("canvas");
+  cv.width = W; cv.height = H;
+  const x = cv.getContext("2d");
+  x.fillStyle = "#ffffff"; x.fillRect(0, 0, W, H);
+
+  const vw = v.videoWidth || 1280, vh = v.videoHeight || 960;
+  const sc = Math.max(F.ww/vw, F.wh/vh);
+  const dw = vw*sc, dh = vh*sc;
+  x.save();
+  x.beginPath(); x.rect(F.wx, F.wy, F.ww, F.wh); x.clip();
+  if(facing === "user"){ x.translate(F.wx + F.ww, 0); x.scale(-1, 1); x.translate(-F.wx, 0); }
+  x.drawImage(v, F.wx + (F.ww-dw)/2, F.wy + (F.wh-dh)/2, dw, dh);
+  x.restore();
+
+  x.drawImage(art, 0, 0, W, H);
+
+  if(pillar) drawPillar(x, W/1080, F.wx, F.wy, F.ww, (F.tagBottom || F.wy + F.wh) - F.wy);
+
+  finish(cv);
+}
+
+/* the plain white and black frames */
+function buildPlain(F){
+  const v = $("cam");
+  const S = 3, bW = 1080;
+  const side = 48, top = 48, bot = 213, hair = 9;
+  const pw = bW - side*2, ph = Math.round(pw*1.25);
+  const W = bW*S, H = (top + ph + hair + bot)*S;
   const P = side*S, PW = pw*S, PH = ph*S, TOP = top*S, HAIR = hair*S, FOOT = bot*S;
 
   const cv = document.createElement("canvas");
   cv.width = W; cv.height = H;
   const x = cv.getContext("2d");
-
   x.fillStyle = F.bg; x.fillRect(0, 0, W, H);
 
-  /* photo, cropped to fill the window */
   const vw = v.videoWidth || 1280, vh = v.videoHeight || 960;
-  const scale = Math.max(PW/vw, PH/vh);
-  const dw = vw*scale, dh = vh*scale;
+  const sc = Math.max(PW/vw, PH/vh);
+  const dw = vw*sc, dh = vh*sc;
   x.save();
   x.beginPath(); x.rect(P, TOP, PW, PH); x.clip();
   if(facing === "user"){ x.translate(P + PW, 0); x.scale(-1, 1); x.translate(-P, 0); }
   x.drawImage(v, P + (PW-dw)/2, TOP + (PH-dh)/2, dw, dh);
   x.restore();
 
-  if(art){
-    /* thin keyline around the photo, like a printed frame */
-    x.strokeStyle = F.key; x.lineWidth = 3*S;
-    x.strokeRect(P - 1.5*S, TOP - 1.5*S, PW + 3*S, PH + 3*S);
-  } else {
-    const g = x.createLinearGradient(P, 0, W-P, 0);
-    g.addColorStop(0,"#32755f"); g.addColorStop(.5,"#5377bb"); g.addColorStop(1,"#cb8f51");
-    x.fillStyle = g; x.fillRect(P, TOP+PH, PW, HAIR);
-  }
+  const g = x.createLinearGradient(P, 0, W-P, 0);
+  g.addColorStop(0,"#32755f"); g.addColorStop(.5,"#5377bb"); g.addColorStop(1,"#cb8f51");
+  x.fillStyle = g; x.fillRect(P, TOP+PH, PW, HAIR);
 
-  /* pillar tag inside the photo */
-  if(pillar){
-    const fs = 23*S, bar = 5*S, gapT = 11*S, padX = 15*S, hgt = 52*S;
-    x.font = "800 " + fs + "px 'Avenir Next', 'Nunito Sans', sans-serif";
-    x.letterSpacing = (3*S) + "px";
-    const tw = x.measureText(pillar).width;
-    const boxW = padX + bar + gapT + tw + padX;
-    const bx = P + 22*S, by = TOP + PH - hgt - 22*S;
-    x.textAlign = "left"; x.textBaseline = "middle";
-    x.fillStyle = "#ffffff"; x.fillRect(bx, by, boxW, hgt);
-    x.fillStyle = PILLAR_COLOR[pillar]; x.fillRect(bx + padX, by + 14*S, bar, hgt - 28*S);
-    x.fillStyle = "#000000";
-    x.fillText(pillar, bx + padX + bar + gapT, by + hgt/2 + 1*S);
-    x.letterSpacing = "0px";
-  }
+  if(pillar) drawPillar(x, S, P, TOP, PW, PH);
 
-  /* the illustrated border, painted over the photo edges */
-  if(art){
-    try{
-      const im = await loadArt(F.art, bW, bH, W);
-      x.drawImage(im, 0, 0, W, H);
-    }catch(e){ console.error(e); }
-  }
-
+  const footMid = TOP + PH + HAIR + FOOT/2;
   x.textBaseline = "middle";
+  x.textAlign = "left";
+  x.font = "800 " + (54*S) + "px 'Avenir Next', 'Nunito Sans', sans-serif";
+  x.fillStyle = F.fg;
+  x.letterSpacing = (-2.4*S) + "px";
+  x.fillText("healf", P, footMid);
+  const markW = x.measureText("healf").width;
+  x.fillStyle = "#cb8f51";
+  x.fillText(".", P + markW + 1*S, footMid);
+  x.letterSpacing = "0px";
 
-  if(art){
-    /* event name across the top, wordmark centred underneath the photo */
-    x.textAlign = "center";
-    x.font = "700 " + (31*S) + "px 'Avenir Next', 'Nunito Sans', sans-serif";
-    x.letterSpacing = (9*S) + "px";
-    x.fillStyle = F.fg;
-    x.fillText(CONFIG.EVENT_NAME.toUpperCase(), W/2 + 4.5*S, TOP/2);
-    x.letterSpacing = "0px";
+  x.textAlign = "right";
+  x.font = "700 " + (26*S) + "px 'Avenir Next', 'Nunito Sans', sans-serif";
+  x.fillStyle = F.fg;
+  x.fillText(CONFIG.EVENT_NAME, W - P, footMid - 17*S);
+  x.font = "400 " + (24*S) + "px 'Avenir Next', 'Nunito Sans', sans-serif";
+  x.fillStyle = F.sub;
+  x.fillText(CONFIG.STAMP, W - P, footMid + 19*S);
 
-    const footMid = TOP + PH + FOOT/2;
-    x.font = "800 " + (56*S) + "px 'Avenir Next', 'Nunito Sans', sans-serif";
-    x.letterSpacing = (-2.5*S) + "px";
-    const mw = x.measureText("healf").width;
-    x.fillStyle = F.fg;
-    x.fillText("healf", W/2 - 9*S, footMid - 26*S);
-    x.letterSpacing = "0px";
-    x.fillStyle = F.key;
-    x.textAlign = "left";
-    x.fillText(".", W/2 - 9*S + mw/2, footMid - 26*S);
+  finish(cv);
+}
 
-    x.textAlign = "center";
-    x.font = "400 " + (25*S) + "px 'Avenir Next', 'Nunito Sans', sans-serif";
-    x.letterSpacing = (2.5*S) + "px";
-    x.fillStyle = F.sub;
-    x.fillText(CONFIG.STAMP, W/2 + 1.25*S, footMid + 38*S);
-    x.letterSpacing = "0px";
-  } else {
-    const footMid = TOP + PH + HAIR + FOOT/2;
-    x.textAlign = "left";
-    x.font = "800 " + (54*S) + "px 'Avenir Next', 'Nunito Sans', sans-serif";
-    x.fillStyle = F.fg;
-    x.letterSpacing = (-2.4*S) + "px";
-    x.fillText("healf", P, footMid);
-    const markW = x.measureText("healf").width;
-    x.fillStyle = "#cb8f51";
-    x.fillText(".", P + markW + 1*S, footMid);
-    x.letterSpacing = "0px";
+function drawPillar(x, S, px, py, pwid, phgt){
+  const bar = 5*S, gapT = 11*S, padX = 15*S, hgt = 52*S;
+  x.font = "800 " + (23*S) + "px 'Avenir Next', 'Nunito Sans', sans-serif";
+  x.letterSpacing = (3*S) + "px";
+  const tw = x.measureText(pillar).width;
+  const boxW = padX + bar + gapT + tw + padX;
+  const bx = px + 22*S, by = py + phgt - hgt - 22*S;
+  x.textAlign = "left"; x.textBaseline = "middle";
+  x.fillStyle = "#ffffff"; x.fillRect(bx, by, boxW, hgt);
+  x.fillStyle = PILLAR_COLOR[pillar]; x.fillRect(bx + padX, by + 14*S, bar, hgt - 28*S);
+  x.fillStyle = "#000000";
+  x.fillText(pillar, bx + padX + bar + gapT, by + hgt/2 + 1*S);
+  x.letterSpacing = "0px";
+}
 
-    x.textAlign = "right";
-    x.font = "700 " + (26*S) + "px 'Avenir Next', 'Nunito Sans', sans-serif";
-    x.fillStyle = F.fg;
-    x.fillText(CONFIG.EVENT_NAME, W - P, footMid - 17*S);
-    x.font = "400 " + (24*S) + "px 'Avenir Next', 'Nunito Sans', sans-serif";
-    x.fillStyle = F.sub;
-    x.fillText(CONFIG.STAMP, W - P, footMid + 19*S);
-  }
-
+function finish(cv){
   window.__full = cv.toDataURL("image/jpeg", 0.94);
   $("out").src = window.__full;
   stopCamera();
@@ -838,6 +660,7 @@ $("closeBox").addEventListener("click", function(){ $("lightbox").classList.remo
 
 paintLeft();
 paintFrameHint();
+if(FRAMES[frameKey].file) loadFrameImage(FRAMES[frameKey].file).catch(function(){});
 })();
 </script>
 </body>
