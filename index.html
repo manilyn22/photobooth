@@ -1,0 +1,844 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1">
+<title>healf. photobooth</title>
+<meta name="theme-color" content="#ffffff">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Nunito+Sans:ital,wght@0,400;0,600;0,700;0,800&display=swap" rel="stylesheet">
+
+<!-- =======================================================================
+     SETTINGS  >  this is the ONLY part you need to edit.
+     Paste your two Supabase values between the quote marks. See the guide.
+     ======================================================================= -->
+<script>
+const CONFIG = {
+  SUPABASE_URL:      "https://psacdwcuggojenunefop.supabase.co",
+  SUPABASE_ANON_KEY: "sb_publishable_0NQ8M2SyENM8X2Lj1xv2VQ_WR5qdCTf",
+
+  EVENT_NAME:  "Remote Retreat",
+  EVENT_PLACE: "Boracay",
+  EVENT_DATES: "2-4 October 2026",
+  STAMP:       "Boracay 2026",   // small text printed on every photo
+
+  MAX_POSTS: 10                  // gallery posts per person. Saving to phone is unlimited.
+};
+</script>
+<!-- ================== nothing below here needs editing ================== -->
+
+<style>
+:root{
+  --paper:#ffffff;
+  --ink:#000000;
+  --mist:#f5f5f5;
+  --line:#d4d4d4;
+  --slate:#575757;
+  --green:#32755f;
+  --blue:#5377bb;
+  --bronze:#cb8f51;
+  --navy:#1f2a44;
+  --sand:#e7d9c1;
+  --brand:linear-gradient(90deg,var(--green) 0%,var(--blue) 50%,var(--bronze) 100%);
+  --pad:20px;
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{height:100%}
+body{
+  margin:0;background:var(--paper);color:var(--ink);
+  font-family:"Avenir Next",Avenir,"Nunito Sans",-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+  font-size:17px;line-height:1.45;
+  -webkit-font-smoothing:antialiased;
+  overscroll-behavior:none;
+}
+button{font:inherit;color:inherit;border:0;background:none;cursor:pointer}
+input{font:inherit}
+:focus-visible{outline:2px solid var(--ink);outline-offset:3px;border-radius:2px}
+
+.screen{
+  display:none;flex-direction:column;min-height:100svh;
+  padding:max(env(safe-area-inset-top),12px) var(--pad) max(env(safe-area-inset-bottom),14px);
+}
+.screen.on{display:flex}
+
+.mark{font-weight:800;letter-spacing:-.045em;line-height:1}
+.mark i{font-style:normal;color:var(--bronze)}
+
+/* ---------- start ---------- */
+#start{justify-content:center}
+.hero .mark{font-size:clamp(58px,19vw,92px)}
+.hero h1{
+  font-size:clamp(34px,10.5vw,52px);font-weight:700;letter-spacing:-.035em;
+  line-height:1.02;margin:26px 0 10px;
+}
+.hero p{margin:0;color:var(--slate);font-size:18px}
+.rule{height:4px;background:var(--brand);margin:30px 0 0;width:74px}
+
+.field{margin-bottom:14px}
+.field label{display:block;font-size:14px;color:var(--slate);margin-bottom:7px}
+.field input{
+  width:100%;padding:15px 16px;border:1.5px solid var(--line);background:var(--paper);
+  border-radius:0;font-size:17px;
+}
+.field input:focus{border-color:var(--ink);outline:none}
+
+.btn{
+  display:flex;align-items:center;justify-content:center;gap:10px;width:100%;
+  padding:18px;background:var(--ink);color:#fff;font-weight:700;font-size:17px;
+  letter-spacing:-.01em;
+}
+.btn.ghost{background:none;color:var(--ink);border:1.5px solid var(--line);font-weight:600}
+.btn:disabled{opacity:.35}
+.btn+.btn{margin-top:10px}
+.foot{margin-top:46px}
+.tiny{font-size:13.5px;color:var(--slate);text-align:center;margin:14px 0 0}
+
+/* ---------- top bar ---------- */
+.bar{display:flex;align-items:center;justify-content:space-between;gap:12px;min-height:42px;margin-bottom:10px}
+.bar .mark{font-size:25px}
+.iconbtn{
+  display:grid;place-items:center;width:42px;height:42px;border:1.5px solid var(--line);
+  font-size:15px;font-weight:600
+}
+
+/* ---------- booth ---------- */
+.stage{
+  position:relative;width:100%;aspect-ratio:4/5;background:var(--mist);
+  overflow:hidden;border:3px solid var(--line);transition:border-color .2s;
+}
+.stage video{width:100%;height:100%;object-fit:cover;display:block}
+.stage video.mirror{transform:scaleX(-1)}
+.tagPreview{
+  position:absolute;left:12px;bottom:12px;display:none;align-items:center;gap:8px;
+  background:#fff;padding:6px 12px 6px 9px;font-size:11.5px;font-weight:800;letter-spacing:.11em;
+}
+.tagPreview.on{display:flex}
+.tagPreview span{width:4px;height:14px;background:var(--green)}
+.count{
+  position:absolute;inset:0;display:none;place-items:center;background:rgba(255,255,255,.82);
+  font-size:26vmin;font-weight:800;letter-spacing:-.05em
+}
+.count.on{display:grid}
+.notice{padding:24px 18px;background:var(--mist);font-size:15.5px;line-height:1.5}
+
+.controls{margin-top:12px}
+.rowlabel{font-size:12.5px;color:var(--slate);margin:0 0 6px}
+.chips{display:flex;gap:6px;margin-bottom:12px}
+.chip{
+  flex:1;min-width:0;padding:9px 2px;border:1.5px solid var(--line);font-size:11px;font-weight:800;
+  letter-spacing:.05em;text-align:center;line-height:1.1
+}
+.chip[aria-pressed="true"]{background:var(--ink);color:#fff;border-color:var(--ink)}
+.fchip{padding:0 0 7px;overflow:hidden}
+.fchip .sw{display:block;height:20px;margin-bottom:6px}
+
+.shutterRow{display:flex;align-items:center;justify-content:center;gap:24px;margin-top:auto;padding:14px 0 2px}
+.shutter{
+  width:84px;height:84px;border-radius:50%;background:var(--brand);
+  display:grid;place-items:center;flex:none
+}
+.shutter:disabled{opacity:.4}
+.shutter em{width:69px;height:69px;border-radius:50%;background:var(--paper);display:block}
+.shutter:active em{width:60px;height:60px}
+.side{width:84px;text-align:center;font-size:13px;color:var(--slate);font-weight:600;line-height:1.25}
+
+/* ---------- review ---------- */
+#review .out{width:100%;max-width:430px;margin:0 auto;display:block}
+#review .acts{max-width:430px;margin:16px auto 0;width:100%}
+
+/* ---------- gallery ---------- */
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;padding-bottom:8px}
+.cell{position:relative;background:var(--mist);aspect-ratio:3/4;overflow:hidden;border:0;padding:0}
+.cell img{width:100%;height:100%;object-fit:cover;display:block}
+.cell b{
+  position:absolute;left:0;right:0;bottom:0;padding:16px 9px 7px;color:#fff;font-size:12.5px;
+  font-weight:600;background:linear-gradient(transparent,rgba(0,0,0,.65));text-align:left
+}
+.empty{padding:48px 6px;text-align:center;color:var(--slate);font-size:15.5px}
+.lightbox{
+  position:fixed;inset:0;background:rgba(255,255,255,.97);display:none;z-index:9;
+  padding:20px;align-items:center;justify-content:center;flex-direction:column;gap:16px
+}
+.lightbox.on{display:flex}
+.lightbox img{max-width:100%;max-height:76svh;object-fit:contain}
+
+.toast{
+  position:fixed;left:50%;bottom:26px;transform:translateX(-50%);z-index:20;
+  background:var(--ink);color:#fff;padding:13px 20px;font-size:15px;font-weight:600;
+  max-width:88vw;text-align:center;opacity:0;pointer-events:none;transition:opacity .18s
+}
+.toast.on{opacity:1}
+@media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+</style>
+</head>
+<body>
+
+<!-- ================= START ================= -->
+<section class="screen on" id="start">
+  <div class="hero">
+    <div class="mark">healf<i>.</i></div>
+    <h1 id="hEvent">Remote Retreat</h1>
+    <p id="hWhere">Boracay</p>
+    <div class="rule"></div>
+  </div>
+
+  <div class="foot">
+    <div class="field">
+      <label for="who">Your name</label>
+      <input id="who" type="text" autocomplete="given-name" placeholder="First name is fine" maxlength="28">
+    </div>
+    <button class="btn" id="goBooth" disabled>Open the camera</button>
+    <button class="btn ghost" id="goGallery">See everyone's photos</button>
+    <p class="tiny">Works in your phone's browser. No app, no sign-in.</p>
+  </div>
+</section>
+
+<!-- ================= BOOTH ================= -->
+<section class="screen" id="booth">
+  <div class="bar">
+    <button class="iconbtn" id="boothBack" aria-label="Back">&#8592;</button>
+    <div class="mark">healf<i>.</i></div>
+    <button class="iconbtn" id="flip" aria-label="Switch camera">&#8635;</button>
+  </div>
+
+  <div class="stage" id="stage">
+    <video id="cam" playsinline muted autoplay></video>
+    <div class="tagPreview" id="tagPreview"><span></span><em id="tagPreviewText" style="font-style:normal">EAT</em></div>
+    <div class="count" id="count">3</div>
+  </div>
+  <div class="notice" id="camError" style="display:none"></div>
+
+  <div class="controls">
+    <p class="rowlabel">Pick a frame</p>
+    <div class="chips" id="frames"></div>
+    <p class="rowlabel">Add a pillar</p>
+    <div class="chips" id="pillars">
+      <button class="chip" data-p="" aria-pressed="true">NONE</button>
+      <button class="chip" data-p="EAT" aria-pressed="false">EAT</button>
+      <button class="chip" data-p="MOVE" aria-pressed="false">MOVE</button>
+      <button class="chip" data-p="MIND" aria-pressed="false">MIND</button>
+      <button class="chip" data-p="SLEEP" aria-pressed="false">SLEEP</button>
+    </div>
+  </div>
+
+  <div class="shutterRow">
+    <div class="side"></div>
+    <button class="shutter" id="snap" aria-label="Take the photo"><em></em></button>
+    <div class="side" id="leftCount">&nbsp;</div>
+  </div>
+</section>
+
+<!-- ================= REVIEW ================= -->
+<section class="screen" id="review">
+  <div class="bar">
+    <button class="iconbtn" id="reviewBack" aria-label="Retake">&#8592;</button>
+    <div class="mark">healf<i>.</i></div>
+    <div style="width:42px"></div>
+  </div>
+  <img class="out" id="out" alt="Your photo">
+  <div class="acts">
+    <button class="btn" id="save">Save to my phone</button>
+    <button class="btn ghost" id="post">Post to the gallery</button>
+    <button class="btn ghost" id="again">Take another</button>
+    <p class="tiny">On iPhone it lands in Files &gt; Downloads. Press and hold it, then Save Image.</p>
+  </div>
+</section>
+
+<!-- ================= GALLERY ================= -->
+<section class="screen" id="gallery">
+  <div class="bar">
+    <button class="iconbtn" id="galBack" aria-label="Back">&#8592;</button>
+    <div class="mark">healf<i>.</i></div>
+    <button class="iconbtn" id="refresh" aria-label="Refresh">&#8635;</button>
+  </div>
+  <div id="galBody"><p class="empty">Loading...</p></div>
+</section>
+
+<div class="lightbox" id="lightbox">
+  <img id="lightboxImg" alt="">
+  <button class="btn ghost" id="closeBox" style="max-width:260px">Close</button>
+</div>
+<div class="toast" id="toast"></div>
+
+<script>
+(function(){
+"use strict";
+
+const $ = function(id){ return document.getElementById(id); };
+const screens = ["start","booth","review","gallery"];
+function show(name){
+  screens.forEach(function(s){ $(s).classList.toggle("on", s === name); });
+  window.scrollTo(0,0);
+}
+let toastTimer;
+function toast(msg){
+  const t = $("toast"); t.textContent = msg; t.classList.add("on");
+  clearTimeout(toastTimer); toastTimer = setTimeout(function(){ t.classList.remove("on"); }, 2800);
+}
+const hasCloud = function(){ return !!(CONFIG.SUPABASE_URL && CONFIG.SUPABASE_ANON_KEY); };
+
+/* ---------------- frames ---------------- */
+const FRAMES = {
+  white:  { label:"White",  bg:"#ffffff", fg:"#000000", sub:"#575757", edge:"#d4d4d4", hair:true },
+  black:  { label:"Black",  bg:"#000000", fg:"#ffffff", sub:"#9a9a9a", edge:"#000000", hair:true },
+  tropic: { label:"Tropic", bg:"#ffffff", fg:"#123024", sub:"#6c7a72", edge:"#b9d3c6",
+            art:"tropic", key:"#cb8f51" },
+  coast:  { label:"Coast",  bg:"#ffffff", fg:"#1f2a44", sub:"#7b869c", edge:"#bcccea",
+            art:"coast",  key:"#5377bb" }
+};
+const FRAME_KEYS = ["white","black","tropic","coast"];
+let frameKey = "white";
+
+(function buildFrameChips(){
+  const row = $("frames");
+  FRAME_KEYS.forEach(function(k){
+    const f = FRAMES[k];
+    const b = document.createElement("button");
+    b.className = "chip fchip";
+    b.dataset.f = k;
+    b.setAttribute("aria-pressed", String(k === frameKey));
+    b.innerHTML = '<span class="sw" style="background:' + swatchCSS(k) + '"></span>' + f.label.toUpperCase();
+    row.appendChild(b);
+  });
+  row.addEventListener("click", function(e){
+    const b = e.target.closest(".fchip"); if(!b) return;
+    frameKey = b.dataset.f;
+    Array.prototype.forEach.call(row.children, function(c){
+      c.setAttribute("aria-pressed", String(c === b));
+    });
+    paintFrameHint();
+  });
+})();
+
+function paintFrameHint(){
+  const f = FRAMES[frameKey];
+  $("stage").style.borderColor = f.edge;
+}
+
+/* ---------------- state ---------------- */
+let stream = null, facing = "user", pillar = "";
+const PILLAR_COLOR = { EAT:"#cb8f51", MOVE:"#32755f", MIND:"#5377bb", SLEEP:"#1f2a44" };
+
+function postsUsed(){ return parseInt(localStorage.getItem("healf_booth_posts") || "0", 10); }
+function bumpPosts(){ localStorage.setItem("healf_booth_posts", String(postsUsed()+1)); paintLeft(); }
+function paintLeft(){
+  $("leftCount").innerHTML = hasCloud()
+    ? Math.max(0, CONFIG.MAX_POSTS - postsUsed()) + "<br>posts left"
+    : "&nbsp;";
+}
+
+/* ---------------- start screen ---------------- */
+$("hEvent").textContent = CONFIG.EVENT_NAME;
+$("hWhere").textContent = CONFIG.EVENT_PLACE + ", " + CONFIG.EVENT_DATES;
+document.title = "healf. photobooth - " + CONFIG.EVENT_NAME;
+
+const who = $("who");
+who.value = localStorage.getItem("healf_booth_name") || "";
+const checkName = function(){ $("goBooth").disabled = who.value.trim().length < 2; };
+who.addEventListener("input", checkName); checkName();
+who.addEventListener("keydown", function(e){ if(e.key === "Enter" && !$("goBooth").disabled) $("goBooth").click(); });
+
+if(!hasCloud()) $("goGallery").style.display = "none";
+
+$("goBooth").addEventListener("click", async function(){
+  localStorage.setItem("healf_booth_name", who.value.trim());
+  show("booth"); paintLeft(); paintFrameHint(); await startCamera();
+});
+$("goGallery").addEventListener("click", function(){ show("gallery"); loadGallery(); });
+
+/* ---------------- camera ---------------- */
+async function startCamera(){
+  stopCamera();
+  $("camError").style.display = "none";
+  $("stage").style.display = "";
+  try{
+    stream = await navigator.mediaDevices.getUserMedia({
+      video:{ facingMode:facing, width:{ideal:2560}, height:{ideal:2560} },
+      audio:false
+    });
+    const v = $("cam");
+    v.srcObject = stream;
+    v.classList.toggle("mirror", facing === "user");
+    try{ await v.play(); }catch(e){}
+    $("snap").disabled = false;
+  }catch(err){
+    $("snap").disabled = true;
+    $("stage").style.display = "none";
+    const box = $("camError");
+    box.style.display = "block";
+    box.innerHTML = (err && err.name === "NotAllowedError")
+      ? "<b>The camera is blocked.</b><br>Tap the <b>aA</b> or padlock icon in your browser's address bar, choose Website Settings, and set Camera to Allow. Then reload this page."
+      : "<b>No camera found.</b><br>Open this page in Safari or Chrome on your phone. The camera needs an https link, which the live site has.";
+  }
+}
+function stopCamera(){ if(stream){ stream.getTracks().forEach(function(t){ t.stop(); }); stream = null; } }
+
+$("flip").addEventListener("click", function(){ facing = facing === "user" ? "environment" : "user"; startCamera(); });
+$("boothBack").addEventListener("click", function(){ stopCamera(); show("start"); });
+
+$("pillars").addEventListener("click", function(e){
+  const b = e.target.closest(".chip"); if(!b) return;
+  pillar = b.dataset.p;
+  Array.prototype.forEach.call($("pillars").children, function(c){
+    c.setAttribute("aria-pressed", String(c === b));
+  });
+  const pv = $("tagPreview");
+  pv.classList.toggle("on", !!pillar);
+  if(pillar){
+    $("tagPreviewText").textContent = pillar;
+    pv.firstElementChild.style.background = PILLAR_COLOR[pillar];
+  }
+});
+
+/* ---------------- sound ---------------- */
+let actx = null;
+function beep(freq, dur, vol){
+  try{
+    actx = actx || new (window.AudioContext || window.webkitAudioContext)();
+    if(actx.state === "suspended") actx.resume();
+    const o = actx.createOscillator(), g = actx.createGain();
+    o.type = "sine"; o.frequency.value = freq;
+    g.gain.setValueAtTime(vol, actx.currentTime);
+    g.gain.exponentialRampToValueAtTime(0.0001, actx.currentTime + dur);
+    o.connect(g).connect(actx.destination); o.start(); o.stop(actx.currentTime + dur);
+  }catch(e){}
+}
+function shutterSound(){
+  beep(1500, .06, .25);
+  setTimeout(function(){ beep(700, .09, .2); }, 60);
+}
+
+/* ---------------- frame artwork (drawn as SVG, then painted on) ---------------- */
+function R(n){ return Math.round(n*10)/10; }
+
+function gPlace(x, y, rot, inner, sc){
+  return '<g transform="translate(' + R(x) + ',' + R(y) + ') rotate(' + R(rot) + ')' +
+         (sc && sc !== 1 ? ' scale(' + sc + ')' : '') + '">' + inner + '</g>';
+}
+function sLeaf(len, w, fill, op){
+  return '<path d="M0 0 C' + R(len*.22) + ' ' + R(-w) + ' ' + R(len*.72) + ' ' + R(-w*.95) +
+         ' ' + R(len) + ' 0 C' + R(len*.72) + ' ' + R(w*.95) + ' ' + R(len*.22) + ' ' + R(w) +
+         ' 0 0 Z" fill="' + fill + '" opacity="' + op + '"/>' +
+         '<path d="M0 0 Q' + R(len*.5) + ' ' + R(-w*.1) + ' ' + R(len) + ' 0" fill="none" ' +
+         'stroke="#ffffff" stroke-opacity=".3" stroke-width="' + R(Math.max(1, len*.014)) + '"/>';
+}
+function sFrond(len, fill, op){
+  let out = '<path d="M0 0 Q' + R(len*.5) + ' ' + R(-len*.07) + ' ' + R(len) + ' ' + R(-len*.16) +
+            '" fill="none" stroke="' + fill + '" stroke-opacity="' + op + '" stroke-width="' +
+            R(len*.02) + '" stroke-linecap="round"/>';
+  const n = 9;
+  for(let i = 1; i <= n; i++){
+    const t = i/n;
+    const qx = 2*(1-t)*t*(len*.5) + t*t*len;
+    const qy = 2*(1-t)*t*(-len*.07) + t*t*(-len*.16);
+    const L = len*(0.48*Math.sin(Math.PI*Math.min(t*1.04, 1)) + 0.07);
+    const w = L*0.125;
+    out += gPlace(qx, qy, -72 + 44*t, sLeaf(L, w, fill, op));
+    out += gPlace(qx, qy,  66 - 38*t, sLeaf(L, w, fill, op*0.9));
+  }
+  return out;
+}
+function sBloom(r, petal, mid, op){
+  let out = '';
+  for(let k = 0; k < 5; k++){
+    out += '<ellipse cx="' + R(r*.54) + '" cy="0" rx="' + R(r*.54) + '" ry="' + R(r*.36) +
+           '" fill="' + petal + '" opacity="' + op + '" transform="rotate(' + (k*72) + ')"/>';
+  }
+  out += '<circle r="' + R(r*.2) + '" fill="' + mid + '" opacity="' + op + '"/>';
+  return out;
+}
+function sStar(r, fill, op){
+  const rad = function(d){ return d*Math.PI/180; };
+  const P5 = [];
+  for(let k = 0; k < 5; k++){
+    const base = -90 + k*72;
+    P5.push({
+      ox: Math.cos(rad(base))*r,        oy: Math.sin(rad(base))*r,
+      ix: Math.cos(rad(base+36))*r*.44, iy: Math.sin(rad(base+36))*r*.44,
+      ax: Math.cos(rad(base+15))*r*.84, ay: Math.sin(rad(base+15))*r*.84,
+      bx: Math.cos(rad(base+57))*r*.84, by: Math.sin(rad(base+57))*r*.84
+    });
+  }
+  let d = 'M' + R(P5[0].ox) + ' ' + R(P5[0].oy);
+  for(let k = 0; k < 5; k++){
+    const c = P5[k], n2 = P5[(k+1)%5];
+    d += ' Q' + R(c.ax) + ' ' + R(c.ay) + ' ' + R(c.ix) + ' ' + R(c.iy);
+    d += ' Q' + R(c.bx) + ' ' + R(c.by) + ' ' + R(n2.ox) + ' ' + R(n2.oy);
+  }
+  d += ' Z';
+  let dots = '';
+  for(let k = 0; k < 5; k++){
+    const a = rad(-90 + k*72);
+    for(let j = 1; j <= 3; j++){
+      const rr = r*(0.28 + j*0.19);
+      dots += '<circle cx="' + R(Math.cos(a)*rr) + '" cy="' + R(Math.sin(a)*rr) +
+              '" r="' + R(r*0.045) + '" fill="#ffffff" opacity="' + (op*0.5) + '"/>';
+    }
+  }
+  return '<path d="' + d + '" fill="' + fill + '" opacity="' + op + '"/>' + dots;
+}
+function sCoral(sc, fill, op){
+  const lanes = [[], [], [], [], []];
+  function branch(x, y, ang, len, depth){
+    const cx = x + Math.cos(ang - .3)*len*.6, cy = y + Math.sin(ang - .3)*len*.6;
+    const ex = x + Math.cos(ang)*len,          ey = y + Math.sin(ang)*len;
+    lanes[4-depth].push('M' + R(x) + ' ' + R(y) + ' Q' + R(cx) + ' ' + R(cy) + ' ' + R(ex) + ' ' + R(ey));
+    if(depth > 0){
+      branch(ex, ey, ang - .62, len*.64, depth-1);
+      branch(ex, ey, ang + .58, len*.6,  depth-1);
+      if(depth >= 3) branch(ex, ey, ang + .02, len*.56, depth-1);
+    } else {
+      lanes[4].push('M' + R(ex) + ' ' + R(ey) + ' L' + R(ex) + ' ' + R(ey));
+    }
+  }
+  branch(0, 0, -Math.PI/2, 26*sc, 4);
+  const widths = [9.5, 6.8, 5, 3.6, 2.8];
+  let out = '';
+  lanes.forEach(function(lane, i){
+    if(!lane.length) return;
+    out += '<path d="' + lane.join(' ') + '" fill="none" stroke="' + fill + '" stroke-opacity="' + op +
+           '" stroke-width="' + R(widths[i]*sc) + '" stroke-linecap="round"/>';
+  });
+  return out;
+}
+
+/* one corner bundle of foliage, growing out of the origin */
+function tropicCluster(sc){
+  const D = "#14503c", M = "#2e7a61", L = "#58a085";
+  let o = '';
+  o += gPlace(-36,  52,  12, sFrond(262, D, .95));
+  o += gPlace(-18, 162,  54, sFrond(214, M, .92));
+  o += gPlace( 58, -30,  76, sFrond(232, D, .86));
+  o += gPlace(132, 104,  20, sFrond(152, L, .9));
+  o += gPlace( 96,  18,  -4, sLeaf(168, 64, M, .9));
+  o += gPlace( 18, 214,  58, sLeaf(146, 56, L, .88));
+  o += gPlace(184,  46,  30, sLeaf(112, 40, D, .85));
+  o += gPlace(122, 162,   0, sBloom(40, "#eec39d", "#cb8f51", 1));
+  o += gPlace( 34, 196,   0, sBloom(27, "#f6ded0", "#cb8f51", 1));
+  o += gPlace(198, 122,   0, sBloom(20, "#eec39d", "#a8703a", 1));
+  return sc === 1 ? o : '<g transform="scale(' + sc + ')">' + o + '</g>';
+}
+
+function ornamentSVG(kind, W, H){
+  let body = '', defs = '';
+  if(kind === "tropic"){
+    body += gPlace(0, 0, 0, tropicCluster(1));
+    body += gPlace(W, H, 180, tropicCluster(1));
+    body += gPlace(W, 0, 90, tropicCluster(0.62));
+    body += gPlace(0, H, 270, tropicCluster(0.55));
+  } else {
+    const wash = function(id, c, o1, x1, y1, x2, y2){
+      return '<linearGradient id="' + id + '" x1="' + x1 + '" y1="' + y1 + '" x2="' + x2 + '" y2="' + y2 + '">' +
+             '<stop offset="0" stop-color="' + c + '" stop-opacity="' + o1 + '"/>' +
+             '<stop offset=".65" stop-color="' + c + '" stop-opacity="' + (o1*0.35) + '"/>' +
+             '<stop offset="1" stop-color="' + c + '" stop-opacity="0"/></linearGradient>';
+    };
+    defs += wash("wt", "#4a6fc0", .7, 0, 0, 0, 1);
+    defs += wash("wt2","#3f61a4", .34, 0, 0, 0, 1);
+    defs += wash("wb", "#4a6fc0", .56, 0, 1, 0, 0);
+
+    body += '<path d="M0 0 H' + W + ' V150 C' + R(W*.85) + ' 232 ' + R(W*.7) + ' 104 ' +
+            R(W*.55) + ' 178 C' + R(W*.41) + ' 244 ' + R(W*.27) + ' 124 ' + R(W*.14) +
+            ' 190 C' + R(W*.08) + ' 218 ' + R(W*.04) + ' 168 0 200 Z" fill="url(#wt)"/>';
+    body += '<path d="M0 0 H' + W + ' V96 C' + R(W*.78) + ' 150 ' + R(W*.6) + ' 62 ' +
+            R(W*.4) + ' 124 C' + R(W*.24) + ' 172 ' + R(W*.11) + ' 88 0 132 Z" fill="url(#wt2)"/>';
+    body += '<path d="M0 ' + H + ' H' + W + ' V' + R(H-168) + ' C' + R(W*.79) + ' ' + R(H-88) +
+            ' ' + R(W*.61) + ' ' + R(H-206) + ' ' + R(W*.44) + ' ' + R(H-134) +
+            ' C' + R(W*.28) + ' ' + R(H-74) + ' ' + R(W*.14) + ' ' + R(H-196) + ' 0 ' + R(H-140) + ' Z" fill="url(#wb)"/>';
+    body += gPlace(104, H-126, -18, sStar(62, "#5e85c6", .95));
+    body += gPlace(208,  H-64,  14, sStar(32, "#93aedb", .92));
+    body += gPlace(W-168, H-92,  6, sCoral(1.55, "#cb8f51", .88));
+    body += gPlace(W-76,  H-112, -9, sCoral(1.1,  "#6f92cd", .9));
+    body += gPlace(W-124, 132,   22, sStar(42, "#7b9ad0", .92));
+    body += gPlace(96,    120,   -8, sCoral(1.0,  "#7b9ad0", .78));
+    body += gPlace(W-64,  178,   -14, sCoral(0.8, "#93aedb", .62));
+  }
+  return '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ' + W + ' ' + H + '">' +
+         (defs ? '<defs>' + defs + '</defs>' : '') + body + '</svg>';
+}
+
+var artCache = {};
+function loadArt(kind, W, H, px){
+  const id = kind + ":" + px;
+  if(artCache[id]) return artCache[id];
+  const svg = ornamentSVG(kind, W, H).replace('<svg ', '<svg width="' + px + '" height="' + Math.round(px*H/W) + '" ');
+  artCache[id] = new Promise(function(res, rej){
+    const im = new Image();
+    im.onload = function(){ res(im); };
+    im.onerror = rej;
+    im.src = "data:image/svg+xml;charset=utf-8," + encodeURIComponent(svg);
+  });
+  return artCache[id];
+}
+
+/* little preview of each frame for the chips */
+function swatchCSS(key){
+  const f = FRAMES[key];
+  if(!f.art) return 'linear-gradient(' + f.bg + ',' + f.bg + ')';
+  let inner;
+  if(key === "tropic"){
+    inner = '<rect width="140" height="44" fill="#fff"/>' +
+            gPlace(4, 6, 12, sFrond(58, "#1f4a3c", .95)) +
+            gPlace(2, 34, -28, sFrond(48, "#32755f", .9)) +
+            gPlace(136, 40, 190, sFrond(56, "#1f4a3c", .95)) +
+            gPlace(126, 8, 150, sFrond(44, "#5d9b83", .9)) +
+            gPlace(54, 22, 0, sBloom(13, "#e6b183", "#cb8f51", 1));
+  } else {
+    inner = '<rect width="140" height="44" fill="#fff"/>' +
+            '<defs><linearGradient id="sw" x1="0" y1="0" x2="0" y2="1">' +
+            '<stop offset="0" stop-color="#5377bb" stop-opacity=".55"/>' +
+            '<stop offset="1" stop-color="#5377bb" stop-opacity="0"/></linearGradient></defs>' +
+            '<path d="M0 0 H140 V16 C104 30 76 8 44 22 C28 29 14 18 0 26 Z" fill="url(#sw)"/>' +
+            gPlace(26, 33, -14, sStar(11, "#6f92cd", .95)) +
+            gPlace(112, 32, 0, sCoral(.42, "#cb8f51", .9));
+  }
+  const svg = '<svg xmlns="http://www.w3.org/2000/svg" width="140" height="44" viewBox="0 0 140 44">' + inner + '</svg>';
+  return "center/cover no-repeat url('data:image/svg+xml;charset=utf-8," +
+         encodeURIComponent(svg).replace(/'/g, "%27") + "')";
+}
+
+/* ---------------- capture ---------------- */
+$("snap").addEventListener("click", async function(){
+  if(!stream) return;
+  $("snap").disabled = true;
+  const c = $("count"); c.classList.add("on");
+  for(let n = 3; n >= 1; n--){
+    c.textContent = n; beep(880, .12, .18);
+    await new Promise(function(r){ setTimeout(r, 850); });
+  }
+  c.classList.remove("on");
+  shutterSound();
+  await buildPhoto();
+  $("snap").disabled = false;
+});
+
+async function buildPhoto(){
+  try{ await document.fonts.ready; }catch(e){}
+  const v = $("cam");
+  const F = FRAMES[frameKey];
+  const S = 3;
+  const art = !!F.art;
+
+  /* base layout in 1x units, then everything multiplied by S */
+  const bW = 1080;
+  const side = art ? 112 : 48;
+  const top  = art ? 176 : 48;
+  const bot  = art ? 234 : 213;
+  const pw   = bW - side*2;
+  const ph   = Math.round(pw*1.25);          // 4:5 window
+  const hair = art ? 0 : 9;
+  const bH   = top + ph + hair + bot;
+
+  const W = bW*S, H = bH*S;
+  const P = side*S, PW = pw*S, PH = ph*S, TOP = top*S, HAIR = hair*S, FOOT = bot*S;
+
+  const cv = document.createElement("canvas");
+  cv.width = W; cv.height = H;
+  const x = cv.getContext("2d");
+
+  x.fillStyle = F.bg; x.fillRect(0, 0, W, H);
+
+  /* photo, cropped to fill the window */
+  const vw = v.videoWidth || 1280, vh = v.videoHeight || 960;
+  const scale = Math.max(PW/vw, PH/vh);
+  const dw = vw*scale, dh = vh*scale;
+  x.save();
+  x.beginPath(); x.rect(P, TOP, PW, PH); x.clip();
+  if(facing === "user"){ x.translate(P + PW, 0); x.scale(-1, 1); x.translate(-P, 0); }
+  x.drawImage(v, P + (PW-dw)/2, TOP + (PH-dh)/2, dw, dh);
+  x.restore();
+
+  if(art){
+    /* thin keyline around the photo, like a printed frame */
+    x.strokeStyle = F.key; x.lineWidth = 3*S;
+    x.strokeRect(P - 1.5*S, TOP - 1.5*S, PW + 3*S, PH + 3*S);
+  } else {
+    const g = x.createLinearGradient(P, 0, W-P, 0);
+    g.addColorStop(0,"#32755f"); g.addColorStop(.5,"#5377bb"); g.addColorStop(1,"#cb8f51");
+    x.fillStyle = g; x.fillRect(P, TOP+PH, PW, HAIR);
+  }
+
+  /* pillar tag inside the photo */
+  if(pillar){
+    const fs = 23*S, bar = 5*S, gapT = 11*S, padX = 15*S, hgt = 52*S;
+    x.font = "800 " + fs + "px 'Avenir Next', 'Nunito Sans', sans-serif";
+    x.letterSpacing = (3*S) + "px";
+    const tw = x.measureText(pillar).width;
+    const boxW = padX + bar + gapT + tw + padX;
+    const bx = P + 22*S, by = TOP + PH - hgt - 22*S;
+    x.textAlign = "left"; x.textBaseline = "middle";
+    x.fillStyle = "#ffffff"; x.fillRect(bx, by, boxW, hgt);
+    x.fillStyle = PILLAR_COLOR[pillar]; x.fillRect(bx + padX, by + 14*S, bar, hgt - 28*S);
+    x.fillStyle = "#000000";
+    x.fillText(pillar, bx + padX + bar + gapT, by + hgt/2 + 1*S);
+    x.letterSpacing = "0px";
+  }
+
+  /* the illustrated border, painted over the photo edges */
+  if(art){
+    try{
+      const im = await loadArt(F.art, bW, bH, W);
+      x.drawImage(im, 0, 0, W, H);
+    }catch(e){ console.error(e); }
+  }
+
+  x.textBaseline = "middle";
+
+  if(art){
+    /* event name across the top, wordmark centred underneath the photo */
+    x.textAlign = "center";
+    x.font = "700 " + (31*S) + "px 'Avenir Next', 'Nunito Sans', sans-serif";
+    x.letterSpacing = (9*S) + "px";
+    x.fillStyle = F.fg;
+    x.fillText(CONFIG.EVENT_NAME.toUpperCase(), W/2 + 4.5*S, TOP/2);
+    x.letterSpacing = "0px";
+
+    const footMid = TOP + PH + FOOT/2;
+    x.font = "800 " + (56*S) + "px 'Avenir Next', 'Nunito Sans', sans-serif";
+    x.letterSpacing = (-2.5*S) + "px";
+    const mw = x.measureText("healf").width;
+    x.fillStyle = F.fg;
+    x.fillText("healf", W/2 - 9*S, footMid - 26*S);
+    x.letterSpacing = "0px";
+    x.fillStyle = F.key;
+    x.textAlign = "left";
+    x.fillText(".", W/2 - 9*S + mw/2, footMid - 26*S);
+
+    x.textAlign = "center";
+    x.font = "400 " + (25*S) + "px 'Avenir Next', 'Nunito Sans', sans-serif";
+    x.letterSpacing = (2.5*S) + "px";
+    x.fillStyle = F.sub;
+    x.fillText(CONFIG.STAMP, W/2 + 1.25*S, footMid + 38*S);
+    x.letterSpacing = "0px";
+  } else {
+    const footMid = TOP + PH + HAIR + FOOT/2;
+    x.textAlign = "left";
+    x.font = "800 " + (54*S) + "px 'Avenir Next', 'Nunito Sans', sans-serif";
+    x.fillStyle = F.fg;
+    x.letterSpacing = (-2.4*S) + "px";
+    x.fillText("healf", P, footMid);
+    const markW = x.measureText("healf").width;
+    x.fillStyle = "#cb8f51";
+    x.fillText(".", P + markW + 1*S, footMid);
+    x.letterSpacing = "0px";
+
+    x.textAlign = "right";
+    x.font = "700 " + (26*S) + "px 'Avenir Next', 'Nunito Sans', sans-serif";
+    x.fillStyle = F.fg;
+    x.fillText(CONFIG.EVENT_NAME, W - P, footMid - 17*S);
+    x.font = "400 " + (24*S) + "px 'Avenir Next', 'Nunito Sans', sans-serif";
+    x.fillStyle = F.sub;
+    x.fillText(CONFIG.STAMP, W - P, footMid + 19*S);
+  }
+
+  window.__full = cv.toDataURL("image/jpeg", 0.94);
+  $("out").src = window.__full;
+  stopCamera();
+  show("review");
+}
+
+/* ---------------- review actions ---------------- */
+$("reviewBack").addEventListener("click", back);
+$("again").addEventListener("click", back);
+async function back(){ show("booth"); await startCamera(); }
+
+$("save").addEventListener("click", function(){
+  const a = document.createElement("a");
+  a.href = window.__full;
+  a.download = "healf-" + CONFIG.EVENT_PLACE.toLowerCase().replace(/\s+/g,"-") + "-" + Date.now() + ".jpg";
+  document.body.appendChild(a); a.click(); a.remove();
+  toast("Saved. Check your downloads.");
+});
+
+if(!hasCloud()){ $("post").style.display = "none"; }
+
+$("post").addEventListener("click", async function(){
+  if(postsUsed() >= CONFIG.MAX_POSTS){
+    toast("That's your " + CONFIG.MAX_POSTS + " gallery posts. Saving to your phone is still unlimited.");
+    return;
+  }
+  const btn = $("post"); btn.disabled = true; btn.textContent = "Posting...";
+  try{
+    const small = await shrink(window.__full, 1000, 0.68);
+    const r = await fetch(CONFIG.SUPABASE_URL.replace(/\/+$/,"") + "/rest/v1/photos", {
+      method:"POST",
+      headers:{
+        "apikey": CONFIG.SUPABASE_ANON_KEY,
+        "Authorization": "Bearer " + CONFIG.SUPABASE_ANON_KEY,
+        "Content-Type": "application/json",
+        "Prefer": "return=minimal"
+      },
+      body: JSON.stringify({ name: (localStorage.getItem("healf_booth_name")||"Someone"), image: small })
+    });
+    if(!r.ok) throw new Error(await r.text());
+    bumpPosts();
+    toast("Posted. It's in the gallery now.");
+  }catch(e){
+    toast("That didn't post. Check your signal and try again.");
+    console.error(e);
+  }
+  btn.disabled = false; btn.textContent = "Post to the gallery";
+});
+
+function shrink(dataUrl, maxW, q){
+  return new Promise(function(res){
+    const im = new Image();
+    im.onload = function(){
+      const s = Math.min(1, maxW / im.width);
+      const c = document.createElement("canvas");
+      c.width = Math.round(im.width*s); c.height = Math.round(im.height*s);
+      c.getContext("2d").drawImage(im, 0, 0, c.width, c.height);
+      res(c.toDataURL("image/jpeg", q));
+    };
+    im.src = dataUrl;
+  });
+}
+
+/* ---------------- gallery ---------------- */
+$("galBack").addEventListener("click", function(){ show(stream ? "booth" : "start"); });
+$("refresh").addEventListener("click", loadGallery);
+
+async function loadGallery(){
+  const body = $("galBody");
+  if(!hasCloud()){ body.innerHTML = '<p class="empty">The shared gallery is not switched on yet.</p>'; return; }
+  body.innerHTML = '<p class="empty">Loading...</p>';
+  try{
+    const r = await fetch(
+      CONFIG.SUPABASE_URL.replace(/\/+$/,"") +
+      "/rest/v1/photos?select=id,name,image,created_at&order=created_at.desc&limit=300",
+      { headers:{ "apikey": CONFIG.SUPABASE_ANON_KEY, "Authorization": "Bearer " + CONFIG.SUPABASE_ANON_KEY } }
+    );
+    if(!r.ok) throw new Error(await r.text());
+    const rows = await r.json();
+    if(!rows.length){ body.innerHTML = '<p class="empty">Nothing here yet. Be the first one in.</p>'; return; }
+    const grid = document.createElement("div");
+    grid.className = "grid";
+    rows.forEach(function(row){
+      const cell = document.createElement("button");
+      cell.className = "cell";
+      const im = document.createElement("img");
+      im.src = row.image; im.loading = "lazy"; im.alt = "Photo by " + (row.name || "a colleague");
+      const nm = document.createElement("b");
+      nm.textContent = row.name || "Someone";
+      cell.appendChild(im); cell.appendChild(nm);
+      cell.addEventListener("click", function(){
+        $("lightboxImg").src = row.image;
+        $("lightbox").classList.add("on");
+      });
+      grid.appendChild(cell);
+    });
+    body.innerHTML = ""; body.appendChild(grid);
+  }catch(e){
+    body.innerHTML = '<p class="empty">The gallery would not load. Check your signal, then tap the refresh arrow.</p>';
+    console.error(e);
+  }
+}
+$("closeBox").addEventListener("click", function(){ $("lightbox").classList.remove("on"); });
+
+paintLeft();
+paintFrameHint();
+})();
+</script>
+</body>
+</html>
