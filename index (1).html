@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1">
 <title>healf. photobooth</title>
-<meta name="theme-color" content="#ffffff">
+<meta name="theme-color" content="#0d1b24">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Nunito+Sans:ital,wght@0,400;0,600;0,700;0,800&display=swap" rel="stylesheet">
@@ -66,14 +66,52 @@ input{font:inherit}
 .mark i{font-style:normal;color:var(--bronze)}
 
 /* ---------- start ---------- */
-#start{justify-content:center}
-.hero .mark{font-size:clamp(58px,19vw,92px)}
-.hero h1{
-  font-size:clamp(34px,10.5vw,52px);font-weight:700;letter-spacing:-.035em;
-  line-height:1.02;margin:26px 0 10px;
+#start{position:relative;padding:0;justify-content:flex-end;overflow:hidden;background:#0d1b24}
+#start::before{
+  content:"";position:absolute;inset:-14px;z-index:0;
+  background:url("bg-boracay.jpg") center/cover no-repeat;
+  filter:blur(1px) saturate(1.12) brightness(1.04);
 }
-.hero p{margin:0;color:var(--slate);font-size:18px}
-.rule{height:4px;background:var(--brand);margin:30px 0 0;width:74px}
+#start::after{
+  content:"";position:absolute;inset:0;z-index:1;
+  background:linear-gradient(180deg,rgba(6,18,26,.26) 0%,rgba(6,18,26,.08) 30%,rgba(6,18,26,.5) 60%,rgba(6,18,26,.88) 82%,rgba(6,18,26,.94) 100%);
+}
+.mid{
+  position:relative;z-index:2;display:flex;flex-direction:column;justify-content:flex-end;
+  min-height:100svh;padding:max(env(safe-area-inset-top),20px) var(--pad) max(env(safe-area-inset-bottom),20px);
+  color:#fff;
+}
+.mid .mark{font-size:clamp(40px,12vw,58px);color:#fff;margin-bottom:auto;text-shadow:0 2px 16px rgba(0,0,0,.35)}
+.mid .mark i{color:#e9bb8c}
+.hero h1{
+  font-size:clamp(30px,8.6vw,44px);font-weight:700;letter-spacing:-.035em;
+  line-height:1.03;margin:0 0 6px;color:#fff;
+  text-shadow:0 2px 18px rgba(0,0,0,.35);
+}
+.hero p{margin:0;color:rgba(255,255,255,.88);font-size:16.5px;text-shadow:0 1px 10px rgba(0,0,0,.5)}
+
+.rules{list-style:none;margin:20px 0 14px;padding:0;border-top:1px solid rgba(255,255,255,.28)}
+.rules li{
+  display:flex;align-items:baseline;justify-content:space-between;gap:14px;
+  padding:11px 0;border-bottom:1px solid rgba(255,255,255,.28);
+}
+.rules b{font-weight:700;font-size:15.5px;white-space:nowrap;color:#fff;text-shadow:0 1px 8px rgba(0,0,0,.5)}
+.rules span{color:rgba(255,255,255,.88);font-size:14.5px;text-align:right;flex:none;text-shadow:0 1px 8px rgba(0,0,0,.5)}
+.rules em{font-style:normal;color:#8fd9bd;font-weight:800}
+.note{font-size:13.5px;color:rgba(255,255,255,.78);margin:0 0 20px;line-height:1.4;text-shadow:0 1px 8px rgba(0,0,0,.5)}
+
+#start .field label{color:rgba(255,255,255,.8)}
+#start .field input{
+  background:rgba(255,255,255,.12);border-color:rgba(255,255,255,.45);color:#fff;
+  backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);
+}
+#start .field input::placeholder{color:rgba(255,255,255,.6)}
+#start .field input:focus{border-color:#fff;background:rgba(255,255,255,.2)}
+#start .btn{background:#fff;color:#000}
+#start .btn.ghost{background:rgba(255,255,255,.1);color:#fff;border-color:rgba(255,255,255,.5)}
+#start .btn:disabled{opacity:.45}
+#start .tiny{color:rgba(255,255,255,.7)}
+#start :focus-visible{outline-color:#fff}
 
 .field{margin-bottom:14px}
 .field label{display:block;font-size:14px;color:var(--slate);margin-bottom:7px}
@@ -91,8 +129,9 @@ input{font:inherit}
 .btn.ghost{background:none;color:var(--ink);border:1.5px solid var(--line);font-weight:600}
 .btn:disabled{opacity:.35}
 .btn+.btn{margin-top:10px}
-.foot{margin-top:46px}
-.tiny{font-size:13.5px;color:var(--slate);text-align:center;margin:14px 0 0}
+.foot{margin-top:0}
+.tiny{font-size:13px;color:var(--slate);text-align:center;margin:12px 0 0}
+.note{font-size:13.5px;color:var(--slate);margin:-8px 0 18px;line-height:1.4}
 
 /* ---------- top bar ---------- */
 .bar{display:flex;align-items:center;justify-content:space-between;gap:12px;min-height:42px;margin-bottom:10px}
@@ -176,21 +215,29 @@ input{font:inherit}
 
 <!-- ================= START ================= -->
 <section class="screen on" id="start">
-  <div class="hero">
+  <div class="mid">
     <div class="mark">healf<i>.</i></div>
-    <h1 id="hEvent">Remote Retreat</h1>
-    <p id="hWhere">Boracay</p>
-    <div class="rule"></div>
-  </div>
 
-  <div class="foot">
-    <div class="field">
-      <label for="who">Your name</label>
-      <input id="who" type="text" autocomplete="given-name" placeholder="First name is fine" maxlength="28">
+    <div class="hero">
+      <h1 id="hEvent">Remote Retreat</h1>
+      <p id="hWhere">Boracay</p>
     </div>
-    <button class="btn" id="goBooth" disabled>Open the camera</button>
-    <button class="btn ghost" id="goGallery">See everyone's photos</button>
-    <p class="tiny">Works in your phone's browser. No app, no sign-in.</p>
+
+    <ul class="rules">
+      <li><b>Save to your phone</b><span><em>Unlimited</em></span></li>
+      <li><b>Post to the shared gallery</b><span id="capLine">10 photos each</span></li>
+    </ul>
+    <p class="note" id="capNote">Only the shared gallery is capped. Keep as many as you like on your own phone.</p>
+
+    <div class="foot">
+      <div class="field">
+        <label for="who">Your name</label>
+        <input id="who" type="text" autocomplete="given-name" placeholder="First name is fine" maxlength="28">
+      </div>
+      <button class="btn" id="goBooth" disabled>Open the camera</button>
+      <button class="btn ghost" id="goGallery">See everyone's photos</button>
+      <p class="tiny">Works in your phone's browser. No app, no sign-in.</p>
+    </div>
   </div>
 </section>
 
@@ -338,7 +385,12 @@ const checkName = function(){ $("goBooth").disabled = who.value.trim().length < 
 who.addEventListener("input", checkName); checkName();
 who.addEventListener("keydown", function(e){ if(e.key === "Enter" && !$("goBooth").disabled) $("goBooth").click(); });
 
-if(!hasCloud()) $("goGallery").style.display = "none";
+$("capLine").textContent = CONFIG.MAX_POSTS + " photos each";
+if(!hasCloud()){
+  $("goGallery").style.display = "none";
+  $("capLine").parentNode.style.display = "none";
+  $("capNote").style.display = "none";
+}
 
 $("goBooth").addEventListener("click", async function(){
   localStorage.setItem("healf_booth_name", who.value.trim());
