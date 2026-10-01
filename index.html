@@ -75,28 +75,29 @@ input{font:inherit}
 /* ---------- start ---------- */
 #start{position:relative;padding:0;justify-content:flex-end;overflow:hidden;background:#0d1b24}
 #start::before{
-  content:"";position:absolute;inset:-14px;z-index:0;
+  content:"";position:fixed;inset:-14px;z-index:0;
   background:url("bg-boracay.jpg") center/cover no-repeat;
   filter:blur(1px) saturate(1.12) brightness(1.04);
 }
 #start::after{
-  content:"";position:absolute;inset:0;z-index:1;
-  background:linear-gradient(180deg,rgba(6,18,26,.3) 0%,rgba(6,18,26,.1) 32%,rgba(6,18,26,.28) 62%,rgba(6,18,26,.42) 100%);
+  content:"";position:fixed;inset:0;z-index:1;
+  background:linear-gradient(180deg,rgba(6,18,26,.32) 0%,rgba(6,18,26,.12) 40%,rgba(6,18,26,.22) 100%);
 }
 .mid{
-  position:relative;z-index:2;display:flex;flex-direction:column;justify-content:flex-end;
+  position:relative;z-index:2;display:flex;flex-direction:column;
   min-height:100svh;padding:0;color:#fff;
 }
+.gap{flex:1 0 30vh}
 .mid .mark{
-  font-size:clamp(40px,12vw,58px);color:#fff;margin-bottom:auto;
+  font-size:clamp(36px,10.5vw,52px);color:#fff;margin-bottom:auto;
   padding:max(env(safe-area-inset-top),20px) var(--pad) 0;
   text-shadow:0 2px 16px rgba(0,0,0,.4);
 }
 .panel{
-  padding:56px var(--pad) max(env(safe-area-inset-bottom),18px);
+  padding:44px var(--pad) max(env(safe-area-inset-bottom),16px);
   background:linear-gradient(180deg,
-    rgba(6,18,26,0) 0%, rgba(6,18,26,.62) 9%, rgba(6,18,26,.86) 22%,
-    rgba(6,18,26,.93) 45%, rgba(6,18,26,.96) 100%);
+    rgba(6,18,26,0) 0%, rgba(6,18,26,.5) 10%, rgba(6,18,26,.84) 24%,
+    rgba(6,18,26,.93) 46%, rgba(6,18,26,.96) 100%);
   backdrop-filter:blur(3px);-webkit-backdrop-filter:blur(3px);
 }
 .mid .mark i{color:#e9bb8c}
@@ -107,7 +108,7 @@ input{font:inherit}
 }
 .hero p{margin:0;color:rgba(255,255,255,.88);font-size:16.5px;text-shadow:0 1px 10px rgba(0,0,0,.5)}
 
-.rules{list-style:none;margin:20px 0 14px;padding:0;border-top:1px solid rgba(255,255,255,.34)}
+.rules{list-style:none;margin:16px 0 12px;padding:0;border-top:1px solid rgba(255,255,255,.34)}
 .rules li{
   display:flex;align-items:baseline;justify-content:space-between;gap:14px;
   padding:11px 0;border-bottom:1px solid rgba(255,255,255,.34);
@@ -117,8 +118,9 @@ input{font:inherit}
 .rules em{font-style:normal;color:#8fd9bd;font-weight:800}
 .note{
   display:block;font-size:15px;line-height:1.45;color:#ffffff;font-weight:600;
-  margin:2px 0 20px;padding:13px 15px;
-  background:rgba(255,255,255,.16);border-left:4px solid #8fd9bd;
+  margin:2px 0 16px;padding:12px 14px;
+  background:rgba(4,14,20,.46);border-left:4px solid #8fd9bd;
+  text-shadow:0 1px 6px rgba(0,0,0,.5);
 }
 .note b{color:#8fd9bd;font-weight:800}
 
@@ -133,13 +135,13 @@ input{font:inherit}
 #start .btn.ghost{background:rgba(255,255,255,.1);color:#fff;border-color:rgba(255,255,255,.5)}
 #start .btn:disabled{opacity:.45}
 #start .tiny{color:rgba(255,255,255,.7)}
-.upbox{margin-top:18px;padding:15px;border:1px solid rgba(255,255,255,.3);background:rgba(255,255,255,.08)}
-.upbox b{display:block;font-size:15px;margin-bottom:3px}
-.upbox p{margin:0 0 11px;font-size:13.5px;color:rgba(255,255,255,.78);line-height:1.4}
+.upbox{margin-top:14px;padding:13px 14px;border:1px solid rgba(255,255,255,.3);background:rgba(4,14,20,.4)}
+.upbox b{display:block;font-size:14.5px;margin-bottom:2px}
+.upbox p{margin:0 0 10px;font-size:13px;color:rgba(255,255,255,.78);line-height:1.35}
 .btn.small{padding:12px;font-size:15px}
 .upstat{margin:10px 0 0!important;font-size:13.5px;color:#8fd9bd;font-weight:700;display:none}
 .upstat.on{display:block}
-.drivelink{display:inline-block;margin-top:10px;font-size:13.5px;color:rgba(255,255,255,.8);text-decoration:underline}
+.drivelink{display:inline-block;margin-top:8px;font-size:13.5px;color:rgba(255,255,255,.8);text-decoration:underline}
 #start :focus-visible{outline-color:#fff}
 
 .field{margin-bottom:14px}
@@ -247,6 +249,7 @@ input{font:inherit}
 <section class="screen on" id="start">
   <div class="mid">
     <div class="mark">healf<i>.</i></div>
+    <div class="gap"></div>
 
     <div class="panel">
     <div class="hero">
@@ -269,8 +272,8 @@ input{font:inherit}
       <button class="btn ghost" id="goGallery">See everyone's photos</button>
 
       <div class="upbox" id="upBox">
-        <b>Got photos or videos of your own?</b>
-        <p>Send them straight to the shared Drive folder. No frame, nothing added.</p>
+        <b>Got your own photos or videos?</b>
+        <p>Sent straight to the shared Drive folder, no frame added.</p>
         <button class="btn ghost small" id="upBtn">Upload from my phone</button>
         <p class="upstat" id="upStat"></p>
         <a class="drivelink" id="driveLink" target="_blank" rel="noopener">Or open the Drive folder</a>
