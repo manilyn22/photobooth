@@ -28,7 +28,9 @@ const CONFIG = {
   STAMP:       "Boracay 2026",   // small text printed on every photo
 
   OUTPUT_SCALE: 2,               // 1 = 1474px wide, 2 = 2948px wide. Higher = sharper, bigger files.
-  MAX_POSTS: 30                  // thumbnails in the in-app gallery per person. Drive and phone saves are unlimited.
+  DRIVE_FOLDER_URL: "https://drive.google.com/drive/folders/15JJSKBJD4K6vVByNDltsQRXJos4ACvrE",
+  MAX_UPLOAD_MB: 30,             // bigger files must go straight into the Drive folder
+  MAX_POSTS: 200                 // in-app gallery thumbnails per person. Effectively no limit.
 };
 </script>
 <!-- ================== nothing below here needs editing ================== -->
@@ -131,6 +133,13 @@ input{font:inherit}
 #start .btn.ghost{background:rgba(255,255,255,.1);color:#fff;border-color:rgba(255,255,255,.5)}
 #start .btn:disabled{opacity:.45}
 #start .tiny{color:rgba(255,255,255,.7)}
+.upbox{margin-top:18px;padding:15px;border:1px solid rgba(255,255,255,.3);background:rgba(255,255,255,.08)}
+.upbox b{display:block;font-size:15px;margin-bottom:3px}
+.upbox p{margin:0 0 11px;font-size:13.5px;color:rgba(255,255,255,.78);line-height:1.4}
+.btn.small{padding:12px;font-size:15px}
+.upstat{margin:10px 0 0!important;font-size:13.5px;color:#8fd9bd;font-weight:700;display:none}
+.upstat.on{display:block}
+.drivelink{display:inline-block;margin-top:10px;font-size:13.5px;color:rgba(255,255,255,.8);text-decoration:underline}
 #start :focus-visible{outline-color:#fff}
 
 .field{margin-bottom:14px}
@@ -247,9 +256,9 @@ input{font:inherit}
 
     <ul class="rules">
       <li><b>Save to your phone</b><span><em>Unlimited</em></span></li>
-      <li><b>Post to the shared gallery</b><span id="capLine">10 photos each</span></li>
+      <li><b>Share with everyone</b><span><em>Unlimited</em></span></li>
     </ul>
-    <p class="note" id="capNote">Only the shared gallery is capped. <b>Keep as many as you like on your own phone.</b></p>
+    <p class="note" id="capNote">No limits. <b>Take as many as you like, keep them, share them.</b></p>
 
     <div class="foot">
       <div class="field">
@@ -258,6 +267,15 @@ input{font:inherit}
       </div>
       <button class="btn" id="goBooth" disabled>Open the camera</button>
       <button class="btn ghost" id="goGallery">See everyone's photos</button>
+
+      <div class="upbox" id="upBox">
+        <b>Got photos or videos of your own?</b>
+        <p>Send them straight to the shared Drive folder. No frame, nothing added.</p>
+        <button class="btn ghost small" id="upBtn">Upload from my phone</button>
+        <p class="upstat" id="upStat"></p>
+        <a class="drivelink" id="driveLink" target="_blank" rel="noopener">Or open the Drive folder</a>
+      </div>
+
       <p class="tiny">Works in your phone's browser. No app, no sign-in.</p>
     </div>
     </div>
@@ -329,6 +347,7 @@ input{font:inherit}
   <img id="lightboxImg" alt="">
   <button class="btn ghost" id="closeBox" style="max-width:260px">Close</button>
 </div>
+<input type="file" id="upInput" accept="image/*,video/*" multiple style="position:absolute;width:1px;height:1px;opacity:0;pointer-events:none">
 <input type="file" id="rollInput" accept="image/*" style="position:absolute;width:1px;height:1px;opacity:0;pointer-events:none">
 <div class="toast" id="toast"></div>
 
@@ -409,10 +428,8 @@ const checkName = function(){ $("goBooth").disabled = who.value.trim().length < 
 who.addEventListener("input", checkName); checkName();
 who.addEventListener("keydown", function(e){ if(e.key === "Enter" && !$("goBooth").disabled) $("goBooth").click(); });
 
-$("capLine").textContent = CONFIG.MAX_POSTS + " photos each";
 if(!hasCloud()){
   $("goGallery").style.display = "none";
-  $("capLine").parentNode.style.display = "none";
   $("capNote").style.display = "none";
 }
 
@@ -421,6 +438,73 @@ $("goBooth").addEventListener("click", async function(){
   show("booth"); paintLeft(); paintFrameHint(); await startCamera();
 });
 $("goGallery").addEventListener("click", function(){ show("gallery"); loadGallery(); });
+
+/* ---------- send your own photos and videos straight to Drive ---------- */
+(function(){
+  const box = $("upBox"), stat = $("upStat"), link = $("driveLink");
+  if(CONFIG.DRIVE_FOLDER_URL) link.href = CONFIG.DRIVE_FOLDER_URL;
+  else link.style.display = "none";
+  if(!CONFIG.DRIVE_URL){ box.style.display = "none"; return; }
+
+  function say(msg, keep){
+    stat.textContent = msg;
+    stat.classList.add("on");
+    if(!keep) setTimeout(function(){ stat.classList.remove("on"); }, 6000);
+  }
+  function readAsDataUrl(file){
+    return new Promise(function(res, rej){
+      const r = new FileReader();
+      r.onload = function(){ res(r.result); };
+      r.onerror = function(){ rej(new Error("could not read the file")); };
+      r.readAsDataURL(file);
+    });
+  }
+
+  $("upBtn").addEventListener("click", function(){ $("upInput").click(); });
+
+  $("upInput").addEventListener("change", async function(e){
+    const files = Array.prototype.slice.call(e.target.files || []);
+    e.target.value = "";
+    if(!files.length) return;
+
+    const cap = (CONFIG.MAX_UPLOAD_MB || 30) * 1024 * 1024;
+    const tooBig = files.filter(function(f){ return f.size > cap; });
+    const queue  = files.filter(function(f){ return f.size <= cap; });
+
+    const btn = $("upBtn");
+    btn.disabled = true;
+    let done = 0, failed = 0;
+
+    for(let i = 0; i < queue.length; i++){
+      const f = queue[i];
+      say("Uploading " + (i+1) + " of " + queue.length + "...", true);
+      try{
+        const dataUrl = await readAsDataUrl(f);
+        const r = await fetch(CONFIG.DRIVE_URL, {
+          method: "POST",
+          headers: { "Content-Type": "text/plain;charset=utf-8" },
+          body: JSON.stringify({
+            name: (localStorage.getItem("healf_booth_name") || "guest"),
+            filename: f.name,
+            type: f.type || "application/octet-stream",
+            image: dataUrl
+          })
+        });
+        const out = await r.json();
+        if(!out || !out.ok) throw new Error(out && out.error ? out.error : "rejected");
+        done++;
+      }catch(err){ failed++; console.error("upload:", f.name, err); }
+    }
+
+    btn.disabled = false;
+    let msg = "";
+    if(done)   msg += done + (done === 1 ? " file" : " files") + " uploaded. ";
+    if(failed) msg += failed + " did not go, try again. ";
+    if(tooBig.length) msg += tooBig.length + (tooBig.length === 1 ? " file is" : " files are") +
+                             " over " + (CONFIG.MAX_UPLOAD_MB || 30) + "MB, add those in the Drive folder below.";
+    say(msg.trim() || "Nothing uploaded.");
+  });
+})();
 
 /* ---------------- camera ---------------- */
 async function startCamera(){
