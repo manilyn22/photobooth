@@ -18,12 +18,17 @@ const CONFIG = {
   SUPABASE_URL:      "https://psacdwcuggojenunefop.supabase.co",
   SUPABASE_ANON_KEY: "sb_publishable_0NQ8M2SyENM8X2Lj1xv2VQ_WR5qdCTf",
 
+  // Paste the Apps Script /exec link between these quotes (see the Drive guide)
+  DRIVE_URL:   "https://script.google.com/macros/s/AKfycbxy1Ub17R_8a6g3FSc2HpVsMFQnEsplKP15FJwS6Qpo0R2RKCoBQNKtjXLYUUErJJZC/exec",
+  DRIVE_CONFIRM: true,           // if Drive uploads work but the app says they failed, set this to false
+
   EVENT_NAME:  "Remote Retreat",
   EVENT_PLACE: "Boracay",
   EVENT_DATES: "2-4 October 2026",
   STAMP:       "Boracay 2026",   // small text printed on every photo
 
-  MAX_POSTS: 10                  // gallery posts per person. Saving to phone is unlimited.
+  OUTPUT_SCALE: 2,               // 1 = 1474px wide, 2 = 2948px wide. Higher = sharper, bigger files.
+  MAX_POSTS: 30                  // thumbnails in the in-app gallery per person. Drive and phone saves are unlimited.
 };
 </script>
 <!-- ================== nothing below here needs editing ================== -->
@@ -74,14 +79,24 @@ input{font:inherit}
 }
 #start::after{
   content:"";position:absolute;inset:0;z-index:1;
-  background:linear-gradient(180deg,rgba(6,18,26,.26) 0%,rgba(6,18,26,.08) 30%,rgba(6,18,26,.5) 60%,rgba(6,18,26,.88) 82%,rgba(6,18,26,.94) 100%);
+  background:linear-gradient(180deg,rgba(6,18,26,.3) 0%,rgba(6,18,26,.1) 32%,rgba(6,18,26,.28) 62%,rgba(6,18,26,.42) 100%);
 }
 .mid{
   position:relative;z-index:2;display:flex;flex-direction:column;justify-content:flex-end;
-  min-height:100svh;padding:max(env(safe-area-inset-top),20px) var(--pad) max(env(safe-area-inset-bottom),20px);
-  color:#fff;
+  min-height:100svh;padding:0;color:#fff;
 }
-.mid .mark{font-size:clamp(40px,12vw,58px);color:#fff;margin-bottom:auto;text-shadow:0 2px 16px rgba(0,0,0,.35)}
+.mid .mark{
+  font-size:clamp(40px,12vw,58px);color:#fff;margin-bottom:auto;
+  padding:max(env(safe-area-inset-top),20px) var(--pad) 0;
+  text-shadow:0 2px 16px rgba(0,0,0,.4);
+}
+.panel{
+  padding:56px var(--pad) max(env(safe-area-inset-bottom),18px);
+  background:linear-gradient(180deg,
+    rgba(6,18,26,0) 0%, rgba(6,18,26,.62) 9%, rgba(6,18,26,.86) 22%,
+    rgba(6,18,26,.93) 45%, rgba(6,18,26,.96) 100%);
+  backdrop-filter:blur(3px);-webkit-backdrop-filter:blur(3px);
+}
 .mid .mark i{color:#e9bb8c}
 .hero h1{
   font-size:clamp(30px,8.6vw,44px);font-weight:700;letter-spacing:-.035em;
@@ -90,15 +105,20 @@ input{font:inherit}
 }
 .hero p{margin:0;color:rgba(255,255,255,.88);font-size:16.5px;text-shadow:0 1px 10px rgba(0,0,0,.5)}
 
-.rules{list-style:none;margin:20px 0 14px;padding:0;border-top:1px solid rgba(255,255,255,.28)}
+.rules{list-style:none;margin:20px 0 14px;padding:0;border-top:1px solid rgba(255,255,255,.34)}
 .rules li{
   display:flex;align-items:baseline;justify-content:space-between;gap:14px;
-  padding:11px 0;border-bottom:1px solid rgba(255,255,255,.28);
+  padding:11px 0;border-bottom:1px solid rgba(255,255,255,.34);
 }
 .rules b{font-weight:700;font-size:15.5px;white-space:nowrap;color:#fff;text-shadow:0 1px 8px rgba(0,0,0,.5)}
 .rules span{color:rgba(255,255,255,.88);font-size:14.5px;text-align:right;flex:none;text-shadow:0 1px 8px rgba(0,0,0,.5)}
 .rules em{font-style:normal;color:#8fd9bd;font-weight:800}
-.note{font-size:13.5px;color:rgba(255,255,255,.78);margin:0 0 20px;line-height:1.4;text-shadow:0 1px 8px rgba(0,0,0,.5)}
+.note{
+  display:block;font-size:15px;line-height:1.45;color:#ffffff;font-weight:600;
+  margin:2px 0 20px;padding:13px 15px;
+  background:rgba(255,255,255,.16);border-left:4px solid #8fd9bd;
+}
+.note b{color:#8fd9bd;font-weight:800}
 
 #start .field label{color:rgba(255,255,255,.8)}
 #start .field input{
@@ -181,6 +201,7 @@ input{font:inherit}
 .shutter em{width:69px;height:69px;border-radius:50%;background:var(--paper);display:block}
 .shutter:active em{width:60px;height:60px}
 .side{width:84px;text-align:center;font-size:13px;color:var(--slate);font-weight:600;line-height:1.25}
+.rollbtn{border:1.5px solid var(--line);padding:11px 4px;color:var(--ink)}
 
 /* ---------- review ---------- */
 #review .out{width:100%;max-width:430px;margin:0 auto;display:block}
@@ -218,6 +239,7 @@ input{font:inherit}
   <div class="mid">
     <div class="mark">healf<i>.</i></div>
 
+    <div class="panel">
     <div class="hero">
       <h1 id="hEvent">Remote Retreat</h1>
       <p id="hWhere">Boracay</p>
@@ -227,7 +249,7 @@ input{font:inherit}
       <li><b>Save to your phone</b><span><em>Unlimited</em></span></li>
       <li><b>Post to the shared gallery</b><span id="capLine">10 photos each</span></li>
     </ul>
-    <p class="note" id="capNote">Only the shared gallery is capped. Keep as many as you like on your own phone.</p>
+    <p class="note" id="capNote">Only the shared gallery is capped. <b>Keep as many as you like on your own phone.</b></p>
 
     <div class="foot">
       <div class="field">
@@ -237,6 +259,7 @@ input{font:inherit}
       <button class="btn" id="goBooth" disabled>Open the camera</button>
       <button class="btn ghost" id="goGallery">See everyone's photos</button>
       <p class="tiny">Works in your phone's browser. No app, no sign-in.</p>
+    </div>
     </div>
   </div>
 </section>
@@ -270,7 +293,7 @@ input{font:inherit}
   </div>
 
   <div class="shutterRow">
-    <div class="side"></div>
+    <button class="side rollbtn" id="rollBtn">Camera<br>roll</button>
     <button class="shutter" id="snap" aria-label="Take the photo"><em></em></button>
     <div class="side" id="leftCount">&nbsp;</div>
   </div>
@@ -286,7 +309,7 @@ input{font:inherit}
   <img class="out" id="out" alt="Your photo">
   <div class="acts">
     <button class="btn" id="save">Save to my phone</button>
-    <button class="btn ghost" id="post">Post to the gallery</button>
+    <button class="btn ghost" id="post">Share with everyone</button>
     <button class="btn ghost" id="again">Take another</button>
     <p class="tiny">On iPhone it lands in Files &gt; Downloads. Press and hold it, then Save Image.</p>
   </div>
@@ -306,6 +329,7 @@ input{font:inherit}
   <img id="lightboxImg" alt="">
   <button class="btn ghost" id="closeBox" style="max-width:260px">Close</button>
 </div>
+<input type="file" id="rollInput" accept="image/*" style="position:absolute;width:1px;height:1px;opacity:0;pointer-events:none">
 <div class="toast" id="toast"></div>
 
 <script>
@@ -428,6 +452,33 @@ function stopCamera(){ if(stream){ stream.getTracks().forEach(function(t){ t.sto
 $("flip").addEventListener("click", function(){ facing = facing === "user" ? "environment" : "user"; startCamera(); });
 $("boothBack").addEventListener("click", function(){ stopCamera(); show("start"); });
 
+$("rollBtn").addEventListener("click", function(){ $("rollInput").click(); });
+$("rollInput").addEventListener("change", async function(e){
+  const file = e.target.files && e.target.files[0];
+  e.target.value = "";
+  if(!file) return;
+  toast("Opening your photo...");
+  try{
+    let img;
+    if(window.createImageBitmap){
+      img = await createImageBitmap(file, { imageOrientation: "from-image" });
+    } else {
+      img = await new Promise(function(res, rej){
+        const i = new Image();
+        i.onload = function(){ res(i); };
+        i.onerror = rej;
+        i.src = URL.createObjectURL(file);
+      });
+    }
+    photoSource = img;
+    sourceMirrored = false;
+    await buildPhoto();
+  }catch(err){
+    console.error(err);
+    toast("That photo would not open. Try another one.");
+  }
+});
+
 $("pillars").addEventListener("click", function(e){
   const b = e.target.closest(".chip"); if(!b) return;
   pillar = b.dataset.p;
@@ -489,15 +540,24 @@ $("snap").addEventListener("click", async function(){
   }
   c.classList.remove("on");
   shutterSound();
+  photoSource = null;
+  sourceMirrored = (facing === "user");
   await buildPhoto();
   $("snap").disabled = false;
 });
+
+let photoSource = null;   // the live video, or a picture chosen from the camera roll
+let sourceMirrored = true;
 
 async function buildPhoto(){
   try{ await document.fonts.ready; }catch(e){}
   const F = FRAMES[frameKey];
   if(F.file) return buildFromImage(F);
   return buildPlain(F);
+}
+function srcSize(src){
+  return { w: src.videoWidth || src.naturalWidth || src.width,
+           h: src.videoHeight || src.naturalHeight || src.height };
 }
 
 /* draws the photo into the window of a designed frame image */
@@ -515,32 +575,36 @@ async function buildFromImage(F){
     return buildPlain(FRAMES.white);
   }
 
-  const v = $("cam");
-  const W = F.cw, H = F.ch;
+  const src = photoSource || $("cam");
+  const Q = CONFIG.OUTPUT_SCALE || 1;
+  const W = F.cw*Q, H = F.ch*Q;
+  const wx = F.wx*Q, wy = F.wy*Q, ww = F.ww*Q, wh = F.wh*Q;
+
   const cv = document.createElement("canvas");
   cv.width = W; cv.height = H;
   const x = cv.getContext("2d");
+  x.imageSmoothingQuality = "high";
   x.fillStyle = "#ffffff"; x.fillRect(0, 0, W, H);
 
-  const vw = v.videoWidth || 1280, vh = v.videoHeight || 960;
-  const sc = Math.max(F.ww/vw, F.wh/vh);
-  const dw = vw*sc, dh = vh*sc;
+  const sz = srcSize(src);
+  const sc = Math.max(ww/sz.w, wh/sz.h);
+  const dw = sz.w*sc, dh = sz.h*sc;
   x.save();
-  x.beginPath(); x.rect(F.wx, F.wy, F.ww, F.wh); x.clip();
-  if(facing === "user"){ x.translate(F.wx + F.ww, 0); x.scale(-1, 1); x.translate(-F.wx, 0); }
-  x.drawImage(v, F.wx + (F.ww-dw)/2, F.wy + (F.wh-dh)/2, dw, dh);
+  x.beginPath(); x.rect(wx, wy, ww, wh); x.clip();
+  if(sourceMirrored){ x.translate(wx + ww, 0); x.scale(-1, 1); x.translate(-wx, 0); }
+  x.drawImage(src, wx + (ww-dw)/2, wy + (wh-dh)/2, dw, dh);
   x.restore();
 
   x.drawImage(art, 0, 0, W, H);
 
-  if(pillar) drawPillar(x, W/1080, F.wx, F.wy, F.ww, (F.tagBottom || F.wy + F.wh) - F.wy);
+  if(pillar) drawPillar(x, W/1080, wx, wy, ww, ((F.tagBottom || F.wy + F.wh) - F.wy)*Q);
 
   finish(cv);
 }
 
 /* the plain white and black frames */
 function buildPlain(F){
-  const v = $("cam");
+  const src = photoSource || $("cam");
   const S = 3, bW = 1080;
   const side = 48, top = 48, bot = 213, hair = 9;
   const pw = bW - side*2, ph = Math.round(pw*1.25);
@@ -552,13 +616,13 @@ function buildPlain(F){
   const x = cv.getContext("2d");
   x.fillStyle = F.bg; x.fillRect(0, 0, W, H);
 
-  const vw = v.videoWidth || 1280, vh = v.videoHeight || 960;
-  const sc = Math.max(PW/vw, PH/vh);
-  const dw = vw*sc, dh = vh*sc;
+  const sz = srcSize(src);
+  const sc = Math.max(PW/sz.w, PH/sz.h);
+  const dw = sz.w*sc, dh = sz.h*sc;
   x.save();
   x.beginPath(); x.rect(P, TOP, PW, PH); x.clip();
-  if(facing === "user"){ x.translate(P + PW, 0); x.scale(-1, 1); x.translate(-P, 0); }
-  x.drawImage(v, P + (PW-dw)/2, TOP + (PH-dh)/2, dw, dh);
+  if(sourceMirrored){ x.translate(P + PW, 0); x.scale(-1, 1); x.translate(-P, 0); }
+  x.drawImage(src, P + (PW-dw)/2, TOP + (PH-dh)/2, dw, dh);
   x.restore();
 
   const g = x.createLinearGradient(P, 0, W-P, 0);
@@ -606,7 +670,7 @@ function drawPillar(x, S, px, py, pwid, phgt){
 }
 
 function finish(cv){
-  window.__full = cv.toDataURL("image/jpeg", 0.94);
+  window.__full = cv.toDataURL("image/jpeg", 0.95);
   $("out").src = window.__full;
   stopCamera();
   show("review");
@@ -615,7 +679,7 @@ function finish(cv){
 /* ---------------- review actions ---------------- */
 $("reviewBack").addEventListener("click", back);
 $("again").addEventListener("click", back);
-async function back(){ show("booth"); await startCamera(); }
+async function back(){ photoSource = null; sourceMirrored = (facing === "user"); show("booth"); await startCamera(); }
 
 $("save").addEventListener("click", function(){
   const a = document.createElement("a");
@@ -625,34 +689,74 @@ $("save").addEventListener("click", function(){
   toast("Saved. Check your downloads.");
 });
 
-if(!hasCloud()){ $("post").style.display = "none"; }
+const hasDrive = function(){ return !!CONFIG.DRIVE_URL; };
+if(!hasCloud() && !hasDrive()){ $("post").style.display = "none"; }
+
+async function toDrive(dataUrl){
+  const body = JSON.stringify({
+    name: (localStorage.getItem("healf_booth_name") || "guest"),
+    image: dataUrl
+  });
+  if(CONFIG.DRIVE_CONFIRM === false){
+    // fire and forget: the upload still happens, we just do not read the reply back
+    await fetch(CONFIG.DRIVE_URL, { method:"POST", mode:"no-cors",
+      headers:{ "Content-Type":"text/plain;charset=utf-8" }, body: body });
+    return { ok:true, unconfirmed:true };
+  }
+  const r = await fetch(CONFIG.DRIVE_URL, {
+    method: "POST",
+    headers: { "Content-Type": "text/plain;charset=utf-8" },  // keeps it a simple request, no preflight
+    body: body
+  });
+  const out = await r.json();
+  if(!out || !out.ok) throw new Error(out && out.error ? out.error : "drive rejected it");
+  return out;
+}
+
+async function toGallery(dataUrl){
+  const small = await shrink(dataUrl, 900, 0.62);
+  const r = await fetch(CONFIG.SUPABASE_URL.replace(/\/+$/,"") + "/rest/v1/photos", {
+    method: "POST",
+    headers: {
+      "apikey": CONFIG.SUPABASE_ANON_KEY,
+      "Authorization": "Bearer " + CONFIG.SUPABASE_ANON_KEY,
+      "Content-Type": "application/json",
+      "Prefer": "return=minimal"
+    },
+    body: JSON.stringify({ name: (localStorage.getItem("healf_booth_name")||"Someone"), image: small })
+  });
+  if(!r.ok) throw new Error(await r.text());
+}
 
 $("post").addEventListener("click", async function(){
-  if(postsUsed() >= CONFIG.MAX_POSTS){
-    toast("That's your " + CONFIG.MAX_POSTS + " gallery posts. Saving to your phone is still unlimited.");
-    return;
+  const btn = $("post");
+  btn.disabled = true;
+  let drive = null, gallery = null;
+
+  if(hasDrive()){
+    btn.textContent = "Uploading to Drive...";
+    try{ await toDrive(window.__full); drive = true; }
+    catch(e){ drive = false; console.error("drive:", e); }
   }
-  const btn = $("post"); btn.disabled = true; btn.textContent = "Posting...";
-  try{
-    const small = await shrink(window.__full, 1000, 0.68);
-    const r = await fetch(CONFIG.SUPABASE_URL.replace(/\/+$/,"") + "/rest/v1/photos", {
-      method:"POST",
-      headers:{
-        "apikey": CONFIG.SUPABASE_ANON_KEY,
-        "Authorization": "Bearer " + CONFIG.SUPABASE_ANON_KEY,
-        "Content-Type": "application/json",
-        "Prefer": "return=minimal"
-      },
-      body: JSON.stringify({ name: (localStorage.getItem("healf_booth_name")||"Someone"), image: small })
-    });
-    if(!r.ok) throw new Error(await r.text());
-    bumpPosts();
-    toast("Posted. It's in the gallery now.");
-  }catch(e){
-    toast("That didn't post. Check your signal and try again.");
-    console.error(e);
+
+  if(hasCloud() && postsUsed() < CONFIG.MAX_POSTS){
+    btn.textContent = "Adding to the gallery...";
+    try{ await toGallery(window.__full); bumpPosts(); gallery = true; }
+    catch(e){ gallery = false; console.error("gallery:", e); }
   }
-  btn.disabled = false; btn.textContent = "Post to the gallery";
+
+  if(drive === false && gallery !== true){
+    toast("That did not send. Check your signal and try again.");
+  } else if(drive === false){
+    toast("In the gallery. The Drive copy did not go, try again.");
+  } else if(drive === true && gallery === false){
+    toast("Saved to Drive. The gallery copy did not go.");
+  } else {
+    toast("Shared. Thanks!");
+  }
+
+  btn.disabled = false;
+  btn.textContent = "Share with everyone";
 });
 
 function shrink(dataUrl, maxW, q){
